@@ -9,4 +9,8 @@ Patches included (see http://www.redmine.org)
 * Issue edit screen: targer version made required field
 * massive Trac migration improvements, see commit 2dc4fc03dc70deb29a2edb91ec55d64e540b009e for some details
 
+If you applied previously some of these patches that contain database migrations you need to remove them with SQL like 
+
+    delete from schema_migrations where version in ('995', '996')
+
 Contributed by Texuna Technologies.
