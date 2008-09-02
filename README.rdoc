@@ -1,2 +1,4 @@
 Hello!
 This is just a redmine's fork without changes for now.
+
+Contributed by Texuna Technologies.
