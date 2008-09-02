@@ -1,7 +1,11 @@
-Hello!
-This is just a redmine's fork without changes for now.
-
 Patches included (see http://www.redmine.org)
 * #1650 Start/end time tracking for timelogging
+* #1671 Show a breakdown of estimated/spent/remaining time for a version
+* #1717 Show diff for issue description change
+* #1705 Use Rails timezones support
+* #1678 Include Estimated Time in issue filters
+* #1680 Make version description multiline and textilizable
+* #1676 Only show incomplete target versions
+* Issue edit screen: targer version made required field
 
 Contributed by Texuna Technologies.
