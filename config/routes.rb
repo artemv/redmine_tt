@@ -9,6 +9,7 @@ ActionController::Routing::Routes.draw do |map|
   map.home '', :controller => 'welcome'
   map.signin 'login', :controller => 'account', :action => 'login'
   map.signout 'logout', :controller => 'account', :action => 'logout'
+  map.show_my_account 'my/account/show', :controller => 'my', :action => 'show_account'
   
   map.connect 'wiki/:id/:page/:action', :controller => 'wiki', :page => nil
   map.connect 'roles/workflow/:id/:role_id/:tracker_id', :controller => 'roles', :action => 'workflow'
@@ -22,6 +23,8 @@ ActionController::Routing::Routes.draw do |map|
   map.connect 'projects/:project_id/boards/:action/:id', :controller => 'boards'
   map.connect 'projects/:project_id/timelog/:action/:id', :controller => 'timelog', :project_id => /.+/
   map.connect 'boards/:board_id/topics/:action/:id', :controller => 'messages'
+
+  map.users_timelog 'users/:user_id/timelog/:action', :controller => 'timelog'
 
   map.with_options :controller => 'repositories' do |omap|
     omap.repositories_show 'repositories/browse/:id/*path', :action => 'browse'

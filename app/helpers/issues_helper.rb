@@ -75,6 +75,9 @@ module IssuesHelper
       when 'fixed_version_id'
         v = Version.find_by_id(detail.value) and value = v.name if detail.value
         v = Version.find_by_id(detail.old_value) and old_value = v.name if detail.old_value
+      when 'description'
+        return content_tag('strong', 'Description') + ' ' + link_to('changed', :controller => 'issues', :action => 'diff', :id => detail.id)
+
       when 'estimated_hours'
         value = "%0.02f" % detail.value.to_f unless detail.value.blank?
         old_value = "%0.02f" % detail.old_value.to_f unless detail.old_value.blank?
@@ -183,5 +186,12 @@ module IssuesHelper
     end
     export.rewind
     export
+  end
+  
+  def spent_hours(issue)
+    return '-' if issue.time_entries.empty?
+    spent_hours = lwr(:label_f_hour, issue.spent_hours)
+    spent_hours += " (#{l(:text_in_progress)})" if issue.time_entry_in_progress
+    link_to spent_hours, {:controller => 'timelog', :action => 'details', :project_id => issue.project, :issue_id => issue}, :class => 'icon icon-time'
   end
 end

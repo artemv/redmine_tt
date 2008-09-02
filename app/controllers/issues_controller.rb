@@ -21,7 +21,10 @@ class IssuesController < ApplicationController
   before_filter :find_issue, :only => [:show, :edit, :reply, :destroy_attachment]
   before_filter :find_issues, :only => [:bulk_edit, :move, :destroy]
   before_filter :find_project, :only => [:new, :update_form, :preview]
-  before_filter :authorize, :except => [:index, :changes, :preview, :update_form, :context_menu]
+
+  before_filter :authorize, :except => [:index, :changes, :preview, 
+    :update_form, :context_menu, :diff]
+
   before_filter :find_optional_project, :only => [:index, :changes]
   accept_key_auth :index, :changes
 
@@ -100,7 +103,7 @@ class IssuesController < ApplicationController
     @allowed_statuses = @issue.new_statuses_allowed_to(User.current)
     @edit_allowed = User.current.allowed_to?(:edit_issues, @project)
     @priorities = Enumeration::get_values('IPRI')
-    @time_entry = TimeEntry.new
+    @time_entry = @issue.time_entry_in_progress(User.current) || TimeEntry.new
     respond_to do |format|
       format.html { render :template => 'issues/show.rhtml' }
       format.atom { render :action => 'changes', :layout => false, :content_type => 'application/atom+xml' }
@@ -133,9 +136,7 @@ class IssuesController < ApplicationController
     @issue.status = default_status
     @allowed_statuses = ([default_status] + default_status.find_new_statuses_allowed_to(User.current.role_for_project(@project), @issue.tracker)).uniq
     
-    if request.get? || request.xhr?
-      @issue.start_date ||= Date.today
-    else
+    if !request.get? && !request.xhr?
       requested_status = IssueStatus.find_by_id(params[:issue][:status_id])
       # Check that the user is allowed to apply the requested status
       @issue.status = (@allowed_statuses.include? requested_status) ? requested_status : default_status
@@ -156,6 +157,7 @@ class IssuesController < ApplicationController
   UPDATABLE_ATTRS_ON_TRANSITION = %w(status_id assigned_to_id fixed_version_id done_ratio) unless const_defined?(:UPDATABLE_ATTRS_ON_TRANSITION)
   
   def edit
+    @issue = flash[:error_issue] if flash[:error_issue]
     @allowed_statuses = @issue.new_statuses_allowed_to(User.current)
     @priorities = Enumeration::get_values('IPRI')
     @edit_allowed = User.current.allowed_to?(:edit_issues, @project)
@@ -172,7 +174,10 @@ class IssuesController < ApplicationController
     end
 
     if request.post?
-      @time_entry = TimeEntry.new(:project => @project, :issue => @issue, :user => User.current, :spent_on => Date.today)
+      @time_entry = TimeEntry.find_by_id(params[:time_entry][:id]) if params[:time_entry]
+      @time_entry ||= TimeEntry.new(:project => @project, :issue => @issue, 
+              :user => User.current, :spent_on => Date.today)
+            
       @time_entry.attributes = params[:time_entry]
       attachments = attach_files(@issue, params[:attachments])
       attachments.each {|a| journal.details << JournalDetail.new(:property => 'attachment', :prop_key => a.id, :value => a.filename)}
@@ -277,7 +282,10 @@ class IssuesController < ApplicationController
       if unsaved_issue_ids.empty?
         flash[:notice] = l(:notice_successful_update) unless @issues.empty?
       else
+        flash[:error_issue] = @issues[0]
         flash[:error] = l(:notice_failed_to_save_issues, unsaved_issue_ids.size, @issues.size, '#' + unsaved_issue_ids.join(', #'))
+        redirect_to :controller => 'issues', :action => :edit, :id => @issues[0]
+        return
       end
       redirect_to :controller => 'issues', :action => 'index', :project_id => @project
       return
@@ -361,6 +369,20 @@ class IssuesController < ApplicationController
     render :partial => 'common/preview'
   end
   
+  def diff
+    @detail = JournalDetail.find(params[:id])
+    @issue = @detail.journal.issue
+    Tempfile.open 'issue_description_oldval', 'tmp' do |old_val_file|
+      old_val_file.write normalize(@detail.old_value)
+      Tempfile.open 'issue_description_oldval', 'tmp' do |new_val_file|
+        new_val_file.write normalize(@detail.value)
+        old_val_file.close
+        new_val_file.close
+        @diff = `diff #{old_val_file.path} #{new_val_file.path} -U 3`
+      end
+    end
+  end
+
 private
   def find_issue
     @issue = Issue.find(params[:id], :include => [:project, :tracker, :status, :author, :priority, :category])
@@ -428,4 +450,10 @@ private
       end
     end
   end
+
+  def normalize(long_string)
+    return long_string if long_string["\r\n"]
+    long_string.split("\n").join("\r\n")
+  end
+
 end

@@ -1,3 +1,6 @@
+<% content_for :header_tags do %>
+    <%= javascript_include_tag 'time' %>
+<% end %>
 <% labelled_tabular_form_for :issue, @issue,
                              :url => {:action => 'edit', :id => @issue},
                              :html => {:id => 'issue-form',
@@ -18,11 +21,14 @@
     <% if authorize_for('timelog', 'edit') %>
         <fieldset class="tabular"><legend><%= l(:button_log_time) %></legend>
         <% fields_for :time_entry, @time_entry, { :builder => TabularFormBuilder, :lang => current_language} do |time_entry| %>
+        <%= time_entry.hidden_field :id %>
         <div class="splitcontentleft">
         <p><%= time_entry.text_field :hours, :size => 6, :label => :label_spent_time %> <%= l(:field_hours) %></p>
+        <p><%= time_entry.time_field :start_time %></p>
         </div>
         <div class="splitcontentright">
         <p><%= time_entry.select :activity_id, activity_collection_for_select_options %></p>
+        <p><%= time_entry.time_field :end_time %></p>
         </div>
         <p><%= time_entry.text_field :comments, :size => 60 %></p>
         <% @time_entry.custom_field_values.each do |value| %>

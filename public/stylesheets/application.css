@@ -621,3 +621,58 @@ vertical-align: middle;
   #main { background: #fff; }
   #content { width: 99%; margin: 0; padding: 0; border: 0; background: #fff; }
 }
+
+div.category_metrics {
+  padding: 0.5em 0 0.5em 0;
+}
+
+table.category_metrics {
+    border-collapse: collapse;    
+}
+
+.category_metrics .header {
+  font-weight:bold;
+}
+
+.category_metrics th {
+  text-align: left;
+  font-weight:normal;    
+}
+
+.category_metrics td.progress {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.category_metrics td.progress.count {
+  width: 30%;
+}
+    
+.category_metrics td.progress.time {
+  width: 30%;
+}
+    
+th.metric_comment, td.metric_comment {
+  font-weight:normal;    
+  font-size:90%;
+  width: 5%;
+}
+
+#version-summary td.label {
+    text-align:right;
+    width: 40%;    
+}
+
+#version-summary td.total-hours {
+    text-align:right;
+}
+
+#version-summary table {
+    width:100%;
+}
+
+div.wiki pre.linebreak {
+    border:none;
+    margin:0;
+    padding:0;
+}

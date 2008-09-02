@@ -44,6 +44,11 @@ module TimelogHelper
     sum
   end
   
+  def hours(entry)
+    return '<span class="hours hours-dec">[%s]</span>' % l(:text_in_progress) if !entry.hours
+    html_hours("%.2f" % entry.hours)
+  end
+  
   def options_for_period_select(value)
     options_for_select([[l(:label_all_time), 'all'],
                         [l(:label_today), 'today'],

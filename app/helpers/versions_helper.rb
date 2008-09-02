@@ -23,22 +23,31 @@ module VersionsHelper
     criteria ||= 'category'
     raise 'Unknown criteria' unless STATUS_BY_CRITERIAS.include?(criteria)
     
-    h = Hash.new {|k,v| k[v] = [0, 0]}
-    begin
-      # Total issue count
-      Issue.count(:group => criteria,
-                  :conditions => ["#{Issue.table_name}.fixed_version_id = ?", version.id]).each {|c,s| h[c][0] = s}
-      # Open issues count
-      Issue.count(:group => criteria,
-                  :include => :status,
-                  :conditions => ["#{Issue.table_name}.fixed_version_id = ? AND #{IssueStatus.table_name}.is_closed = ?", version.id, false]).each {|c,s| h[c][1] = s}
-    rescue ActiveRecord::RecordNotFound
-    # When grouping by an association, Rails throws this exception if there's no result (bug)
-    end
-    counts = h.keys.compact.sort.collect {|k| {:group => k, :total => h[k][0], :open => h[k][1], :closed => (h[k][0] - h[k][1])}}
-    max = counts.collect {|c| c[:total]}.max
+    #sort them alphabetically by category name
+    metrics = version.get_grouped_metrics(criteria).to_a.sort {|x, y| x[0].to_s <=> y[0].to_s} 
+    max = {}
     
-    render :partial => 'issue_counts', :locals => {:version => version, :criteria => criteria, :counts => counts, :max => max}
+    [{:count => :total}, {:time => :total}].each do |metric_info| 
+      metrics_group, total_metric = metric_info.to_a.flatten
+      max[metrics_group] = metrics.map{|item| item[1]}.map {|item| item[metrics_group]}.map {|item| item[total_metric]}.max
+      max[metrics_group] = 1 if max[metrics_group] == 0
+    end
+    
+    render :partial => 'issue_counts', :locals => {:version => version, 
+      :criteria => criteria, :grouped_metrics => metrics, :max => max, 
+      :spent_time_allowed => User.current.allowed_to?(:view_time_entries, @project), 
+      }
+  end
+
+  def time_progress(time_info)  
+    logger.debug "time_info[:spent] = #{time_info[:spent].inspect}"
+    logger.debug "time_info[:total] = #{time_info[:total].inspect}"
+    if (time_info[:total] != 0)
+      time_progress = time_info[:spent].to_f / time_info[:total]
+    else
+      time_progress = 0 #no total also means there's no spent time
+    end    
+    time_progress
   end
   
   def status_by_options_for_select(value)

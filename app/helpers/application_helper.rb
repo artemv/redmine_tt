@@ -90,15 +90,17 @@ module ApplicationHelper
     @date_format ||= (Setting.date_format.blank? || Setting.date_format.size < 2 ? l(:general_fmt_date) : Setting.date_format)
     date.strftime(@date_format)
   end
-  
+
   def format_time(time, include_date = true)
     return nil unless time
     time = time.to_time if time.is_a?(String)
-    zone = User.current.time_zone
-    local = zone ? time.in_time_zone(zone) : (time.utc? ? time.utc_to_local : time)
+    local = time
+    #zone = User.current.time_zone
+    #local = zone ? time.in_time_zone(zone) : (time.utc? ? time.utc_to_local : time)
     @date_format ||= (Setting.date_format.blank? || Setting.date_format.size < 2 ? l(:general_fmt_date) : Setting.date_format)
     @time_format ||= (Setting.time_format.blank? ? l(:general_fmt_time) : Setting.time_format)
-    include_date ? local.strftime("#{@date_format} #{@time_format}") : local.strftime(@time_format)
+    format = include_date ? "#{@date_format} #{@time_format}" : @time_format    
+    local.strftime(format)
   end
   
   # Truncates and returns the string as a single line

@@ -74,6 +74,11 @@ class MyController < ApplicationController
     @notification_option = @user.mail_notification? ? 'all' : (@user.notified_projects_ids.empty? ? 'none' : 'selected')    
   end
 
+  def show_account
+    @user = User.current
+    redirect_to :controller => 'account', :action => 'show', :id => @user.id
+  end
+  
   # Manage user's password
   def password
     @user = User.current

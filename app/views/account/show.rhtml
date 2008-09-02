@@ -30,3 +30,4 @@
 <p>
 <%=l(:label_reported_issues)%>: <%= Issue.count(:conditions => ["author_id=?", @user.id]) %>
 </p>
+<%= link_to(l(:label_spent_time_log), users_timelog_path(@user.id, :details)) %>

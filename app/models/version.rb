@@ -23,7 +23,7 @@ class Version < ActiveRecord::Base
 
   validates_presence_of :name
   validates_uniqueness_of :name, :scope => [:project_id]
-  validates_length_of :name, :maximum => 60
+  validates_length_of :name, :maximum => 100
   validates_format_of :effective_date, :with => /^\d{4}-\d{2}-\d{2}$/, :message => :activerecord_error_not_a_date, :allow_nil => true
   
   def start_date
@@ -42,6 +42,28 @@ class Version < ActiveRecord::Base
   # Returns the total reported time for this version
   def spent_hours
     @spent_hours ||= TimeEntry.sum(:hours, :include => :issue, :conditions => ["#{Issue.table_name}.fixed_version_id = ?", id]).to_f
+  end
+
+  
+  def calc_remaining_and_total_time
+    @remaining_hours = 0
+    @total_hours = 0
+    get_grouped_metrics(:category).to_a.map{|item| item[1]}.map {|item| item[:time]}.each do |times| 
+      @remaining_hours += times[:remaining]
+      @total_hours += times[:total]
+    end
+  end
+  
+  def remaining_hours
+    return @remaining_hours if @remaining_hours
+    calc_remaining_and_total_time
+    @remaining_hours    
+  end
+  
+  def total_hours
+    return @total_hours if @total_hours
+    calc_remaining_and_total_time
+    @total_hours
   end
   
   # Returns true if the version is completed: due date reached and no open issues
@@ -99,7 +121,53 @@ class Version < ActiveRecord::Base
     end
   end
   
-private
+  def get_grouped_metrics(criteria)
+    condition = issues_version_condition
+    
+    issues = Issue.find(:all, :include => [:status, criteria], 
+      :conditions => condition)
+    
+    spent_times = {}
+    TimeEntry.sum(:hours, :group => :issue_id, :include => :issue,
+        :conditions => condition).each do |issue_id, hours| 
+        
+      spent_times[issue_id] = hours
+    end
+
+    categories_metrics = {}
+    issues.each do |issue|
+      category = issue.send(criteria)
+      categories_metrics[category] ||= {}
+      categories_metrics[category][:time] ||= {:estimated => 0, 
+        :spent => 0, :remaining => 0, :total => 0}
+      metrics = categories_metrics[category][:time]
+      
+      estimated = issue.estimated_hours || 0
+      metrics[:estimated] += estimated
+      spent = spent_times[issue.id] || 0
+      metrics[:spent] += spent
+      remaining = issue.closed? ? 0 : estimated - spent
+      remaining = 0 if remaining < 0
+      metrics[:remaining] += remaining
+      metrics[:total] += (remaining + spent)
+      
+      categories_metrics[category][:count] ||= {:open => 0, :closed => 0, :total => 0}
+      metrics = categories_metrics[category][:count]
+      metrics[:total] += 1
+      if issue.closed?
+        metrics[:closed] += 1 
+      else
+        metrics[:open] += 1 
+      end
+    end
+    categories_metrics
+  end
+  
+  def issues_version_condition
+    ["#{Issue.table_name}.fixed_version_id = ?", id]
+  end
+
+  private
   def check_integrity
     raise "Can't delete version" if self.fixed_issues.find(:first)
   end

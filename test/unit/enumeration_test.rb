@@ -25,7 +25,7 @@ class EnumerationTest < Test::Unit::TestCase
   
   def test_objects_count
     # low priority
-    assert_equal 5, Enumeration.find(4).objects_count
+    assert_equal 7, Enumeration.find(4).objects_count
     # urgent
     assert_equal 0, Enumeration.find(7).objects_count
   end
@@ -40,6 +40,6 @@ class EnumerationTest < Test::Unit::TestCase
   def test_destroy_with_reassign
     Enumeration.find(4).destroy(Enumeration.find(6))
     assert_nil Issue.find(:first, :conditions => {:priority_id => 4})
-    assert_equal 5, Enumeration.find(6).objects_count
+    assert_equal 7, Enumeration.find(6).objects_count
   end
 end

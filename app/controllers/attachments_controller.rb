@@ -31,12 +31,13 @@ class AttachmentsController < ApplicationController
   end
   
   def download
-    @attachment.increment_download if @attachment.container.is_a?(Version)
-    
     # images are sent inline
-    send_file @attachment.diskfile, :filename => filename_for_content_disposition(@attachment.filename),
-                                    :type => @attachment.content_type, 
-                                    :disposition => (@attachment.image? ? 'inline' : 'attachment')
+    options = {:filename => 
+        filename_for_content_disposition(@attachment.filename), 
+      :disposition => (@attachment.image? ? 'inline' : 'attachment')}
+    
+    options.merge!(:type => @attachment.content_type) if @attachment.content_type
+    send_file @attachment.diskfile, options
   end
  
 private

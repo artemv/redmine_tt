@@ -164,4 +164,20 @@ roles_005:
     - :view_changesets
 
   position: 5
-  
+
+roles_006: 
+  name: NoTimeEntries
+  id: 6
+  builtin: 0
+  permissions: |
+    --- 
+    - :add_issue_notes
+    - :view_gantt
+    - :view_calendar
+    - :view_documents
+    - :view_wiki_pages
+    - :view_files
+    - :browse_repository
+    - :view_changesets
+
+  position: 6

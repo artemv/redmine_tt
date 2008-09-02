@@ -636,5 +636,27 @@ default_activity_development: 开发
 enumeration_issue_priorities: 问题优先级
 enumeration_doc_categories: 文档类别
 enumeration_activities: 活动（时间跟踪）
+
+text_email_delivery_not_configured: "Email delivery is not configured, and notifications are disabled.\nConfigure your SMTP server in config/email.yml and restart the application to enable them."
+field_start_time: Start Time
+field_end_time: End Time
+text_in_progress: in progress
+activerecord_error_field_must_be_set_if_other_is_not: must be set if %s is not
+text_clear_to_recalculate_time_by_range: Clear to recalculate by start/end time
+text_and: and
+text_time_entry_intersecting_notice: Notice that this timelog entry (%s) intersects with %s.
+text_time_entry_intersecting_notice_entry: entry
+text_time_entry_intersecting_notice_entry_plural: entries
+button_now: Now
+label_remaining_time: Remaining time
+label_current_total_time: Total
+label_estimated_time_short: Est.
+label_spent_time_short: Spent
+label_remaining_time_short: Rem.
+label_issues_count: Count
+label_time: Time
+text_hours_short: h
+text_not_assigned: Not assigned
+
 button_quote: Quote
 setting_sequential_project_identifiers: Generate sequential project identifiers

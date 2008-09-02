@@ -108,6 +108,17 @@ class Attachment < ActiveRecord::Base
     self.filename =~ /\.(patch|diff)$/i
   end
   
+  def guess_and_fill_mime_type(save = true)
+    require 'mime/types'
+    types = MIME::Types.type_for(self.filename)
+    if !types.empty?
+      content_type = types[0].content_type
+      self.content_type = content_type
+      self.save! if save
+      true
+    end
+  end
+  
 private
   def sanitize_filename(value)
     # get only the filename, not the whole path

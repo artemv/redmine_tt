@@ -28,6 +28,7 @@ class Issue < ActiveRecord::Base
   has_many :journals, :as => :journalized, :dependent => :destroy
   has_many :attachments, :as => :container, :dependent => :destroy
   has_many :time_entries, :dependent => :delete_all
+  
   has_and_belongs_to_many :changesets, :order => "#{Changeset.table_name}.committed_on ASC, #{Changeset.table_name}.id ASC"
   
   has_many :relations_from, :class_name => 'IssueRelation', :foreign_key => 'issue_from_id', :dependent => :delete_all
@@ -45,9 +46,12 @@ class Issue < ActiveRecord::Base
   acts_as_activity_provider :find_options => {:include => [:project, :author, :tracker]}
   
   validates_presence_of :subject, :description, :priority, :project, :tracker, :author, :status
+  validates_presence_of :fixed_version, :if => lambda {|i| !i.project.versions.empty? && !i.allow_empty_fixed_version}
   validates_length_of :subject, :maximum => 255
   validates_inclusion_of :done_ratio, :in => 0..100
   validates_numericality_of :estimated_hours, :allow_nil => true
+
+  attr_accessor :allow_empty_fixed_version
 
   def after_initialize
     if new_record?
@@ -83,6 +87,7 @@ class Issue < ActiveRecord::Base
         new_category = category.nil? ? nil : new_project.issue_categories.find_by_name(category.name)
         self.category = new_category
         self.fixed_version = nil
+        self.allow_empty_fixed_version = true
         self.project = new_project
       end
       if new_tracker
@@ -92,7 +97,7 @@ class Issue < ActiveRecord::Base
         # Manually update project_id on related time entries
         TimeEntry.update_all("project_id = #{new_project.id}", {:issue_id => id})
       else
-        rollback_db_transaction
+        self.connection.rollback_db_transaction
         return false
       end
     end
@@ -123,7 +128,7 @@ class Issue < ActiveRecord::Base
   end
   
   def validate_on_create
-    errors.add :tracker_id, :activerecord_error_invalid unless project.trackers.include?(tracker)
+    errors.add :tracker_id, "project doesn't contain this tracker" unless project.trackers.include?(tracker)
   end
   
   def before_create
@@ -136,7 +141,7 @@ class Issue < ActiveRecord::Base
   def before_save  
     if @current_journal
       # attributes changes
-      (Issue.column_names - %w(id description)).each {|c|
+      (Issue.column_names - %w(id)).each {|c|
         @current_journal.details << JournalDetail.new(:property => 'attr',
                                                       :prop_key => c,
                                                       :old_value => @issue_before_change.send(c),
@@ -259,5 +264,14 @@ class Issue < ActiveRecord::Base
   
   def to_s
     "#{tracker} ##{id}: #{subject}"
+  end
+  
+  def time_entry_in_progress(user = nil)
+    TimeEntry.find_by_issue_id(self.id,  
+        :conditions => 'start_time IS NOT NULL and hours IS NULL' + (user ? " and user_id = #{user.id}" : ''))
+  end
+
+  def active_versions
+    project.active_versions(:for => self)
   end
 end

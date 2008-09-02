@@ -64,4 +64,19 @@ class Test::Unit::TestCase
     Dir.mkdir "#{RAILS_ROOT}/tmp/test/attachments" unless File.directory?("#{RAILS_ROOT}/tmp/test/attachments")
     Attachment.storage_path = "#{RAILS_ROOT}/tmp/test/attachments"
   end
+
+  def assert_error_on(object, field)
+    object.valid?
+    assert object.errors.on(field), "expected error on #{field} attribute"
+  end
+
+  def assert_no_error_on(object, field)
+    object.valid?
+    assert !object.errors.on(field), "expected no error on #{field} attribute"
+  end
+
+  def assert_no_errors(object, options = {})
+    object.valid? if options[:validate]
+    assert_equal [], object.errors.full_messages
+  end
 end

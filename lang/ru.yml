@@ -164,9 +164,11 @@ field_comments: Комментарий
 field_url: URL
 field_start_page: Стартовая страница
 field_subproject: Подпроект
-field_hours: Час(а,ов)
+field_hours: Часов
 field_activity: Деятельность
 field_spent_on: Дата
+field_start_time: Время начала
+field_end_time: Время окончания
 field_identifier: Ун. идентификатор
 field_is_filter: Используется в качестве фильтра
 field_issue_to_id: Связанные задачи
@@ -395,7 +397,7 @@ label_changes_details: Подробности по всем изменениям
 label_issue_tracking: Ситуация по задачам
 label_spent_time: Затраченное время
 label_f_hour: %.2f час
-label_f_hour_plural: %.2f часов(а)
+label_f_hour_plural: %.2f часов
 label_time_tracking: Учет времени
 label_change_plural: Правки
 label_statistics: Статистика
@@ -471,6 +473,14 @@ label_repository_plural: Хранилища
 label_associated_revisions: Связанные редакции
 label_issues_by: Сортировать по %s
 label_display_per_page: 'На страницу: %s'
+label_remaining_time: Осталось
+label_current_total_time: Всего
+label_estimated_time_short: Оценка
+label_spent_time_short: Затр.
+label_remaining_time_short: Ост.
+label_issues_count: Число задач
+label_time: Время
+label_spent_time_log: Журнал потраченного времени
 
 button_login: Вход
 button_submit: Принять
@@ -508,6 +518,7 @@ button_change_password: Изменить пароль
 button_copy: Копировать
 button_annotate: Авторство
 button_update: Обновить
+button_now: Сейчас
 
 status_active: Активен
 status_registered: Зарегистрирован
@@ -542,6 +553,8 @@ text_user_mail_option: "Для невыбранных проектов, вы б�
 text_caracters_minimum: Должно быть не менее %d знаков.
 text_load_default_configuration: Загрузить конфигурацию по-умолчанию
 text_no_configuration_data: "Роли, трекеры, статусы задач и оперативный план не были сконфигурированы.\nНастоятельно рекомендуется загрузить конфигурацию по-умолчанию. Вы сможете её изменить потом."
+text_not_assigned: Не назначено
+text_hours_short: ч
 
 default_role_manager: Менеджер
 default_role_developper: Разработчик
@@ -636,6 +649,15 @@ label_generate_key: Сгенерировать ключ
 setting_mail_handler_api_enabled: Включить веб-сервис для входящих сообщений
 setting_mail_handler_api_key: API ключ
 text_email_delivery_not_configured: "Параметры работы с почтовым сервером не настроены и функция уведомления по email не активна.\nНастроить параметры для вашего SMTP сервера вы можете в файле config/email.yml. Для применения изменений перезапустите приложение."
+
+text_in_progress: в процессе
+activerecord_error_field_must_be_set_if_other_is_not: необходимо задать, если значение поля '%s' не задано
+text_clear_to_recalculate_time_by_range: Очистите, чтобы пересчитать по времени окончания
+text_and: и
+text_time_entry_intersecting_notice: Обратите внимание, что эта запись о потраченном времени (%s) пересекается с %s.
+text_time_entry_intersecting_notice_entry: записью
+text_time_entry_intersecting_notice_entry_plural: записями
+
 field_parent_title: Parent page
 label_issue_watchers: Watchers
 setting_commit_logs_encoding: Commit messages encoding

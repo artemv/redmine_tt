@@ -124,7 +124,7 @@ class UserTest < Test::Unit::TestCase
     assert_equal "Manager", role.name
     
     # user with no role
-    assert !@dlopper.role_for_project(Project.find(2)).member?
+    assert !@dlopper.role_for_project(Project.find(3)).member?
   end
   
   def test_mail_notification_all

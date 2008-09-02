@@ -40,6 +40,17 @@ class TabularFormBuilder < ActionView::Helpers::FormBuilder
     END_SRC
     class_eval src, __FILE__, __LINE__
   end
+
+  def time_field(field)
+    value = nil
+    value = @object.send(field) if @object
+    value = value.strftime('%Y-%m-%d %H:%M') if value
+    result = text_field field, :size => 15, :value => value
+    result += (' <input type="button" onclick="maybeSetTimeNow($(\'%s\'))' + 
+      '" value="' + l(:button_now) + 
+      '" name="action"/>') % "#{@object_name}_#{field}"
+    result
+  end
   
   def select(field, choices, options = {}, html_options = {}) 
     label_text = l(("field_"+field.to_s.gsub(/\_id$/, "")).to_sym) + (options.delete(:required) ? @template.content_tag("span", " *", :class => "required"): "")

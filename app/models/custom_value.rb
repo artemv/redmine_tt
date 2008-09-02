@@ -48,7 +48,11 @@ protected
       when 'date'
         errors.add(:value, :activerecord_error_not_a_date) unless value =~ /^\d{4}-\d{2}-\d{2}$/
       when 'list'
-        errors.add(:value, :activerecord_error_inclusion) unless custom_field.possible_values.include?(value)
+        if !custom_field.possible_values.include?(value)
+          errors.add(:value, "Value '#{value}' is not one of this custom " + 
+              "field's possible values " + 
+              "(#{custom_field.possible_values.inspect})")
+        end
       end
     end
   end

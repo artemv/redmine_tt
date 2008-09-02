@@ -21,6 +21,12 @@ class ApplicationController < ActionController::Base
   layout 'base'
   
   before_filter :user_setup, :check_if_login_required, :set_localization
+  before_filter :set_time_zone
+
+  def set_time_zone
+    Time.zone = User.current.time_zone if User.current
+  end
+
   filter_parameter_logging :password
   
   include Redmine::MenuManager::MenuController
@@ -102,7 +108,9 @@ class ApplicationController < ActionController::Base
 
   # Authorize the user for the requested action
   def authorize(ctrl = params[:controller], action = params[:action])
-    allowed = User.current.allowed_to?({:controller => ctrl, :action => action}, @project)
+    options = {}
+    options.merge!(:global => true) if !@project
+    allowed = User.current.allowed_to?({:controller => ctrl, :action => action}, @project, options)
     allowed ? true : deny_access
   end
   
@@ -221,5 +229,10 @@ class ApplicationController < ActionController::Base
   # Returns a string that can be used as filename value in Content-Disposition header
   def filename_for_content_disposition(name)
     request.env['HTTP_USER_AGENT'] =~ %r{MSIE} ? ERB::Util.url_encode(name) : name
+  end
+
+  def url_path(url_parameters)
+    rs = ::ActionController::Routing::Routes
+    rs.generate url_parameters
   end
 end

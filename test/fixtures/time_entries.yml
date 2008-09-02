@@ -55,4 +55,55 @@ time_entries_004:
   hours: 7.65
   user_id: 1
   tyear: 2007
-  
+
+#this is to run existing controller tests with Start/End time improvement - specific entries
+time_entry_in_progress: 
+  created_on: 2007-04-22 12:20:48 +02:00
+  tweek: 16
+  tmonth: 4
+  project_id: 1
+  comments: Time spent on a subproject (in progress)
+  updated_on: 2007-04-22 12:20:48 +02:00
+  activity_id: 10
+  spent_on: 2007-04-22
+  issue_id: 1
+  id: 5
+  user_id: 1
+  tyear: 2007
+  start_time: 2007-07-11 16:20
+
+#same user but another issue and project, and intersects with time_entry_in_progress
+intersecting_time_entry: 
+  created_on: 2007-04-22 12:20:48 +02:00
+  tweek: 16
+  tmonth: 4
+  project_id: 2
+  comments: Time entry intersecting with time_entry_in_progress
+  updated_on: 2007-04-22 12:20:48 +02:00
+  activity_id: 10
+  spent_on: 2007-04-22
+  issue_id: 4
+  id: 6
+  user_id: 1
+  tyear: 2007
+  start_time: 2007-07-11 15:20
+  end_time: 2007-07-11 17:20
+  hours: 0 #to not break time calculation tests
+
+#this spans several years - should intersect with time_entry_in_progress as well
+big_intersecting_time_entry: 
+  created_on: 2007-04-22 12:20:48 +02:00
+  tweek: 16
+  tmonth: 4
+  project_id: 1
+  comments: Time entry intersecting with time_entry_in_progress
+  updated_on: 2007-04-22 12:20:48 +02:00
+  activity_id: 10
+  spent_on: 2007-04-22
+  issue_id: 1
+  id: 7
+  user_id: 1
+  tyear: 2007
+  start_time: 2005-07-11 16:30
+  end_time: 2007-07-11 17:20
+  hours: 0 #to not break time calculation tests

@@ -164,6 +164,19 @@ class IssuesControllerTest < Test::Unit::TestCase
                                             :content => /Notes/ } }
   end
 
+  def test_show_in_progress
+    @request.session[:user_id] = 1
+    get :show, :id => 1
+    assert_equal time_entries(:time_entry_in_progress), assigns(:time_entry),
+        'there should be an in-progress time entry for this user'
+  end
+  
+  def test_show_not_in_progress
+    @request.session[:user_id] = 2
+    get :show, :id => 1
+    assert_nil assigns(:time_entry).id, 'time entry for this user should be new'
+  end
+    
   def test_get_new
     @request.session[:user_id] = 2
     get :new, :project_id => 1, :tracker_id => 1
@@ -381,7 +394,7 @@ class IssuesControllerTest < Test::Unit::TestCase
     issue = Issue.find(1)
     assert_equal 1, issue.status_id
     @request.session[:user_id] = 2
-    assert_difference('TimeEntry.count', 0) do
+    assert_difference('TimeEntry.count', 0) do #time entries count should not change because given entry is empty (hence invalid)
       post :edit,
            :id => 1,
            :issue => { :status_id => 2, :assigned_to_id => 3 },
@@ -397,6 +410,21 @@ class IssuesControllerTest < Test::Unit::TestCase
     
     mail = ActionMailer::Base.deliveries.last
     assert mail.body.include?("Status changed from New to Assigned")
+  end
+  
+  def test_post_edit_with_task_in_progress
+    user_id = 1
+    @request.session[:user_id] = user_id
+    issue = Issue.find(1)
+    time_entry = issue.time_entry_in_progress(User.find(user_id))
+    assert_not_nil time_entry, 'there should be time entry in progress'
+    assert_difference('TimeEntry.count', 0) do #time entries count should not change because entry in progress should be updated
+      post :edit,
+           :id => 1,
+           :issue => { },
+           :notes => 'Assigned to dlopper',
+           :time_entry => { :id => time_entry.id, :comments => 'xyz' }
+    end
   end
   
   def test_post_edit_with_note_only
@@ -428,11 +456,13 @@ class IssuesControllerTest < Test::Unit::TestCase
     
     issue = Issue.find(1)
     
-    j = issue.journals.find(:first, :order => 'id DESC')
-    assert_equal '2.5 hours added', j.notes
-    assert_equal 0, j.details.size
+    #:first doesn't work sometimes here with MySQL 5.0.51b
+    e = issue.journals.find(:all, :order => 'id DESC')[0] 
+    assert_equal '2.5 hours added', e.notes
+    assert_equal 0, e.details.size
     
-    t = issue.time_entries.find(:first, :order => 'id DESC')
+    #:first doesn't work sometimes here with MySQL 5.0.51b
+    t = issue.time_entries.find(:all, :order => 'id DESC')[0]
     assert_not_nil t
     assert_equal 2.5, t.hours
     assert_equal spent_hours_before + 2.5, issue.spent_hours

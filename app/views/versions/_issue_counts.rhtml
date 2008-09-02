@@ -8,28 +8,99 @@
                    :onchange => remote_function(:url => { :action => :status_by, :id => version },
                                                 :with => "Form.serialize('status_by_form')"))) %>
 </legend>
-<% if counts.empty? %>
+<% if grouped_metrics.empty? %>
     <p><em><%= l(:label_no_data) %></em></p>
 <% else %>
-    <table>
-    <% counts.each do |count| %>
-    <tr>
-        <td width="130px" align="right" >
-            <%= link_to count[:group], {:controller => 'issues', 
-                                        :action => 'index',
-                                        :project_id => version.project,
-                                        :set_filter => 1,
-                                        :fixed_version_id => version,
-                                        "#{criteria}_id" => count[:group]} %>
-        </td>
-        <td width="240px">
-            <%= progress_bar((count[:closed].to_f / count[:total])*100, 
-                  :legend => "#{count[:closed]}/#{count[:total]}",
-                  :width => "#{(count[:total].to_f / max * 200).floor}px;") %>
-        </td>
-    </tr>
+    <table class="category_metrics">
+    <% grouped_metrics.each do |metrics_group| 
+      category, metrics = *metrics_group
+    %>
+    <% color_class = cycle('odd', 'even')%>
+        <tr class="header <%= color_class %>">
+            <td colspan="5">
+                <%= criteria_operator = category ? "=" : "!*" 
+                link_to category || "[#{l(:text_not_assigned)}]", 
+                                            {:controller => 'issues', 
+                                            :action => 'index',
+                                            :project_id => version.project,
+                                            :set_filter => 1,
+                                            :fields => ["#{criteria}_id", "fixed_version_id", "status_id"],
+                                            :values => {"#{criteria}_id" => [category], "fixed_version_id" => [version], "status_id" => [1]},
+                                            :operators => {"#{criteria}_id" => criteria_operator, "fixed_version_id" => "=", "status_id" => "*"}
+                                            }
+                                          %>
+            </td>
+        </tr>
+        <tr class="<%= color_class %>">
+            <td><%= l(:label_issues_count) %> </td>
+            <% if spent_time_allowed %>
+            <td><%= l(:label_time) %></td>
+            <% end %>
+            <td class="metric_comment">
+                <span title="<%= l(:field_estimated_hours) %>">
+                    <%= l(:label_estimated_time_short) %> 
+                </span>
+            </td>
+            <% if spent_time_allowed %>
+            <td class="metric_comment">
+                <span title="<%= l(:label_spent_time) %>">
+                    <%= l(:label_spent_time_short) %> 
+                </span>
+            </td>
+            <td class="metric_comment">
+                <span title="<%= l(:label_remaining_time) %>">
+                    <%= l(:label_remaining_time_short) %> 
+                </span>
+            </td>
+            <% max_progress_width = 70 %>
+            <% else
+                max_progress_width = 150
+            end %>
+        </tr>
+        <tr class="<%= color_class %>">
+            <td class="progress count">
+                <%= count = metrics[:count]; progress_bar((count[:closed].to_f / count[:total])*100, 
+                      :legend => 
+                        "<span title=\"#{l(:label_closed_issues_plural)}\">" + 
+                        "#{count[:closed]}</span>/" + 
+                        "<span title=\"#{l(:label_total).chars.downcase}\">" + 
+                        "#{count[:total]}</span>",                          
+                      :width => "#{(count[:total].to_f / max[:count] * max_progress_width).floor}px;") %>
+            </td>
+            <% 
+              time = metrics[:time]
+              if spent_time_allowed %>
+            <td class="progress time">
+                <%= progress_bar(time_progress(time)*100, 
+                      :legend => 
+                        "<span title=\"#{l(:label_spent_time)}\">" + 
+                        "#{time[:spent].ceil}</span>/" + 
+                        "<span title=\"#{l(:label_current_total_time)}\">" + 
+                        "#{time[:total].ceil}</span>",                          
+                      :width => "#{(time[:total] / max[:time] * max_progress_width).floor}px;") %>
+            </td>
+            <% end %>
+            <% hours = l(:text_hours_short) %>
+            <td class="metric_comment">
+                <span title="<%= l(:field_estimated_hours) %>">
+                    <%= "#{time[:estimated].ceil}#{hours}" %>
+                </span>                
+            </td>
+            <% if spent_time_allowed %>
+            <td class="metric_comment">
+                <span title="<%= l(:label_spent_time) %>">
+                    <%= "#{time[:spent].ceil}#{hours}" %>
+                </span>                                
+            </td>
+            <td class="metric_comment">
+                <span title="<%= l(:label_remaining_time) %>">
+                    <%= "#{time[:remaining].ceil}#{hours}" %>
+                </span>                                                
+            </td>
+            <% end %>
+        </tr>
     <% end %>
-    </table>
+        </table>
 <% end %>
 </fieldset>
 </form>

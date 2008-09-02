@@ -20,6 +20,10 @@ require File.dirname(__FILE__) + '/../test_helper'
 class TimeEntryTest < Test::Unit::TestCase
   fixtures :issues, :projects, :users, :time_entries
 
+  def setup
+    User.current.language = 'en'
+  end
+  
   def test_hours_format
     assertions = { "2"      => 2.0,
                    "21.1"   => 21.1,
@@ -42,5 +46,81 @@ class TimeEntryTest < Test::Unit::TestCase
       t = TimeEntry.new(:hours => k)
       assert_equal v, t.hours
     end
+  end
+  
+  def test_start_time_must_be_set_if_hours_are_not_and_reverse
+    entry = TimeEntry.new
+    assert_error_on(entry, :start_time)
+    assert_error_on(entry, :hours)    
+  end
+
+  def test_start_time_can_be_absent_if_hours_are_set_and_reverse
+    entry = TimeEntry.new :hours => 1
+    entry.valid?
+    assert_no_error_on(entry, :start_time)
+    entry = TimeEntry.new :start_time => Time.now
+    entry.valid?
+    assert_no_error_on(entry, :hours)
+  end
+
+  def successful_params
+    {:spent_on => '2008-07-13', :issue_id => 1, :user => users(:users_004), 
+      :activity_id => Enumeration.get_values('ACTI').first}
+  end
+  
+  def test_hours_not_calculated_if_set_explicitly
+    #I worked on this time to time during the day, and it was 1 hour in sum
+    entry = TimeEntry.new successful_params.merge(:hours => 1, 
+      :start_time => '2008-07-13 10:56', :end_time => '2008-07-14 10:56')
+      
+    entry.save!    
+    assert_equal 1, entry.hours
+  end
+
+  {['10:56', '11:56'] => 1, ['10:56', '11:26'] => 0.5, 
+      ['10:56', '10:57'] => 0.0167,
+      ['2008-07-13 23:50', '2008-07-14 00:20'] => 0.5}.each do |range, hours|
+    
+    define_method "test_hours_calculated_#{range[0]}_to_#{range[1]}" do
+      
+      #add default day if not specified
+      range = range.map {|time| time['-'] ? time : '2008-07-13 ' + time} 
+      
+      entry = TimeEntry.new successful_params.merge(:hours => nil, 
+        :start_time => range[0], :end_time => range[1])
+      entry.save!    
+      assert_in_delta hours, entry.hours, 0.0001
+    end
+  end
+  
+  def assert_intersects(source, dest)
+    intersecting = time_entries(source).find_intersecting_entries
+    
+    assert !intersecting.empty?, 
+      "there should be intersecting entries for #{source.inspect}"
+    
+    assert intersecting.map {|e| e.id}.
+        include?(time_entries(dest).id), 
+        "#{source.inspect} should intersect with #{dest.inspect}"
+    
+    intersecting
+  end
+  
+  def test_find_intersecting_entries_for_incomplete
+    assert_intersects(:time_entry_in_progress, :intersecting_time_entry)
+  end
+
+  def test_find_intersecting_entries_for_complete_doesnt_find_itself
+    intersecting = assert_intersects(:intersecting_time_entry, 
+      :time_entry_in_progress)
+
+    assert !intersecting.map {|e| e.id}.include?(
+      time_entries(:intersecting_time_entry)), 'time entry\'s ' + 
+      'intersecting entries shouldn\'t include itself'
+  end
+
+  def test_find_intersecting_entries_for_big
+    assert_intersects(:big_intersecting_time_entry, :time_entry_in_progress)
+    assert_intersects(:big_intersecting_time_entry, :intersecting_time_entry)
   end
 end

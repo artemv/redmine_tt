@@ -190,4 +190,13 @@ class IssueTest < Test::Unit::TestCase
     assert_nil Issue.find_by_id(1)
     assert_nil TimeEntry.find_by_issue_id(1)
   end
+  
+  def test_find_in_progress_success
+    assert_equal time_entries(:time_entry_in_progress), 
+        issues(:issues_001).time_entry_in_progress(users(:users_001))
+  end
+
+  def test_find_in_progress_failure
+    assert_nil issues(:issues_001).time_entry_in_progress(users(:users_002))
+  end
 end

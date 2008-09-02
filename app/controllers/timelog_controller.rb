@@ -148,9 +148,10 @@ class TimelogController < ApplicationController
     else
       cond << ["#{TimeEntry.table_name}.issue_id = ?", @issue.id]
     end
+    cond << ["#{TimeEntry.table_name}.user_id = ?", @user.id] if @user
     
     retrieve_date_range
-    cond << ['spent_on BETWEEN ? AND ?', @from, @to]
+    cond << ['spent_on BETWEEN ? AND ?', @from, @to] if @apply_date_filter
 
     TimeEntry.visible_by(User.current) do
       respond_to do |format|
@@ -189,11 +190,39 @@ class TimelogController < ApplicationController
   end
   
   def edit
+    return if redirect_if_in_progress
+    
     render_403 and return if @time_entry && !@time_entry.editable_by?(User.current)
     @time_entry ||= TimeEntry.new(:project => @project, :issue => @issue, :user => User.current, :spent_on => Date.today)
     @time_entry.attributes = params[:time_entry]
+    if !@time_entry.hours
+      if !@time_entry.start_time
+        @activate_field = 'time_entry_start_time'         
+      else
+        @activate_field = 'time_entry_end_time'
+      end
+    end
+    
+    url_writer = lambda do |entry| 
+      "<a href = \"#{url_path(:controller => :timelog, :action => :edit, 
+        :id => entry.id)}\">##{entry.issue_id}-#{entry.id}</a>"
+    end
+    
     if request.post? and @time_entry.save
-      flash[:notice] = l(:notice_successful_update)
+      intersecting = @time_entry.find_intersecting_entries
+      logger.debug "intersecting = #{intersecting.inspect}"
+      msg = l(:notice_successful_update)
+      if !intersecting.empty? 
+        
+        list = lwr(:text_time_entry_intersecting_notice_entry, 
+          intersecting.size) + ' ' + intersecting.
+          map { |entry| url_writer.call(entry) }.
+          to_sentence(:skip_last_comma => true, :connector => l(:text_and))
+        
+        msg += ' ' + l(:text_time_entry_intersecting_notice, 
+          url_writer.call(@time_entry), list)
+      end
+      flash[:notice] = msg
       redirect_to(params[:back_url].blank? ? {:action => 'details', :project_id => @time_entry.project} : params[:back_url])
       return
     end    
@@ -217,8 +246,10 @@ private
     elsif params[:issue_id]
       @issue = Issue.find(params[:issue_id])
       @project = @issue.project
-    elsif params[:project_id]
+    elsif params[:project_id] && !params[:project_id].empty?
       @project = Project.find(params[:project_id])
+    elsif params[:user_id]
+      @user = User.find(params[:user_id])
     else
       render_404
       return false
@@ -241,7 +272,12 @@ private
   def retrieve_date_range
     @free_period = false
     @from, @to = nil, nil
+    @apply_date_filter = true
 
+    if !params[:period_type] && !params[:period] && !params[:from] && !params[:to]
+      @apply_date_filter = false
+    end
+    
     if params[:period_type] == '1' || (params[:period_type].nil? && !params[:period].nil?)
       case params[:period].to_s
       when 'today'
@@ -269,6 +305,8 @@ private
       when 'current_year'
         @from = Date.civil(Date.today.year, 1, 1)
         @to = Date.civil(Date.today.year, 12, 31)
+      when 'all'
+        @apply_date_filter = false
       end
     elsif params[:period_type] == '2' || (params[:period_type].nil? && (!params[:from].nil? || !params[:to].nil?))
       begin; @from = params[:from].to_s.to_date unless params[:from].blank?; rescue; end
@@ -281,5 +319,21 @@ private
     @from, @to = @to, @from if @from && @to && @from > @to
     @from ||= (TimeEntry.minimum(:spent_on, :include => :project, :conditions => Project.allowed_to_condition(User.current, :view_time_entries)) || Date.today) - 1
     @to   ||= (TimeEntry.maximum(:spent_on, :include => :project, :conditions => Project.allowed_to_condition(User.current, :view_time_entries)) || Date.today)
+
+    @from ||= Date.today - 1
+    @to   ||= Date.today
+  end
+  
+  def redirect_if_in_progress
+    if !@time_entry && @issue
+      in_progress_entry = @issue.time_entry_in_progress(User.current)
+      if in_progress_entry
+        #in order to avoid :id form parameter and not complicate :find_project filter
+        redirect_to(:controller => 'timelog', :action => 'edit', 
+            :id => in_progress_entry)
+        return true
+      end
+    end
+    false
   end
 end

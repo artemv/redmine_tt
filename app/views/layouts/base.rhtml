@@ -23,7 +23,7 @@
     <div id="account">
         <%= render_menu :account_menu -%>
     </div>
-    <%= content_tag('div', "#{l(:label_logged_as)} #{User.current.login}", :id => 'loggedas') if User.current.logged? %>
+    <%= content_tag('div', "#{l(:label_logged_as)} #{link_to User.current.login, show_my_account_path}", :id => 'loggedas') if User.current.logged? %>
     <%= render_menu :top_menu -%>
 </div>
       

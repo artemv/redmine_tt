@@ -26,12 +26,17 @@ class TimeEntry < ActiveRecord::Base
   attr_protected :project_id, :user_id, :tyear, :tmonth, :tweek
 
   acts_as_customizable
-  acts_as_event :title => Proc.new {|o| "#{o.user}: #{lwr(:label_f_hour, o.hours)} (#{(o.issue || o.project).event_title})"},
-                :url => Proc.new {|o| {:controller => 'timelog', :action => 'details', :project_id => o.project}},
+  title_proc = Proc.new do |entry|    
+    hours = entry.hours ? lwr(:label_f_hour, entry.hours) : "[#{l(:text_in_progress)}]"
+    "#{entry.user}: #{hours} (#{(entry.issue || entry.project).event_title})"
+  end
+  
+  acts_as_event :title => title_proc,
+                :url => Proc.new {|entry| {:controller => 'timelog', :action => 'details', :project_id => entry.project}},
                 :author => :user,
                 :description => :comments
   
-  validates_presence_of :user_id, :activity_id, :project_id, :hours, :spent_on
+  validates_presence_of :user_id, :activity_id, :project_id, :spent_on
   validates_numericality_of :hours, :allow_nil => true
   validates_length_of :comments, :maximum => 255, :allow_nil => true
 
@@ -48,7 +53,19 @@ class TimeEntry < ActiveRecord::Base
   end
   
   def validate
-    errors.add :hours, :activerecord_error_invalid if hours && (hours < 0 || hours >= 1000)
+    errors.add :hours, :activerecord_error_invalid if hours && (hours >= 1000 || hours < 0)
+    
+    if !start_time && !hours
+      #rather verbose, but l() always translate to English here for some reason
+      errors.add :hours, ll(User.current.language, 
+          :activerecord_error_field_must_be_set_if_other_is_not, 
+          ll(User.current.language, :field_start_time))
+
+      errors.add :start_time, ll(User.current.language, 
+          :activerecord_error_field_must_be_set_if_other_is_not, 
+          ll(User.current.language, :field_hours))
+    end
+      
     errors.add :project_id, :activerecord_error_invalid if project.nil?
     errors.add :issue_id, :activerecord_error_invalid if (issue_id && !issue) || (issue && project!=issue.project)
   end
@@ -75,5 +92,26 @@ class TimeEntry < ActiveRecord::Base
     with_scope(:find => { :conditions => Project.allowed_to_condition(usr, :view_time_entries) }) do
       yield
     end
+  end
+  
+  def before_save
+    if !hours && start_time && end_time
+      self.hours = (end_time - start_time) / 3600
+    end
+  end
+  
+  def find_intersecting_entries
+    params = {:start_time => start_time, :end_time => end_time, :id => id}
+    
+    self.class.find_all_by_user_id(user_id, :conditions => 
+        ["(" + 
+          #this entry's start time or end time is between other's start_time and end_time
+          "start_time < :start_time and :start_time < end_time OR " + 
+          "start_time < :end_time and :end_time < end_time OR " + 
+          #other's entry's start time or end time is between this entry's start_time and end_time
+          "start_time > :start_time and start_time < :end_time OR " + 
+          "end_time > :start_time and end_time < :end_time" +
+          ")" + 
+          "and id <> :id", params])
   end
 end
