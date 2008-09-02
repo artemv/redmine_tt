@@ -2,6 +2,6 @@ Hello!
 This is just a redmine's fork without changes for now.
 
 Patches included (see http://www.redmine.org)
-#1650 Start/end time tracking for timelogging
+* #1650 Start/end time tracking for timelogging
 
 Contributed by Texuna Technologies.
