@@ -1,0 +1,8 @@
+To migrate from Trac:
+* place tracXX/migrate_from_trac.rake to app/lib;
+* update ID_SHIFTS in migrate_from_trac.rake to set ID shift for your project. IDs of issues will be ID_SHIFTS[:your_project] + ticket.id.
+* add your current trac users to 'users' file; extracting them from LDAP is good idea if you use LDAP from Trac
+* put 'user_info.yml' and 'users' files to redmine app root; 
+* back up your database to redmine.sql file;
+* run remigrate.sh (it assumes you use MySQL - change as needed if it's not the case). 
+* Check the errors if any. You might need to alter mappings in migrate_from_trac.rake's and add users in 'user_info.yml' and 'users' files. Go to previous step.

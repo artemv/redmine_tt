@@ -1,0 +1,13 @@
+#this lists aliases users from 'users' file, as they were mentioned in Trac
+:mapping:
+  artemv: Artem Vasiliev
+  sergey: Serge Sadovsky
+
+#this is list of virtual users, like 'somebody' or 'Admin', and ex-team members.
+#these guys are not looked up in 'users' file. 
+:ext:
+  somebody: Nobody Knows
+  andrew: Andrew Sickorsky
+  timing_plugin: Timing and Estimation Plugin
+  worklog_plugin: WorkLog Plugin
+  polina: Polina Lozinskaya
