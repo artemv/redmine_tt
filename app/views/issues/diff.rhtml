@@ -1,0 +1,25 @@
+<% content_for :header_tags do -%>
+    <%= stylesheet_link_tag "scm" -%>
+<% end -%>
+
+<% html_title "##{@issue.id}: #{@issue.subject} - change #{@detail.id}" %>
+
+Issue: <%= link_to( "##{@issue.id} " + h(@issue.subject), :controller => 'issues', :action => 'show', :id => @issue) %>
+<p>
+  <div>Diff: </div>
+  <%= render :partial => 'common/diff', :locals => {:diff => @diff, :diff_type => 'inline'} %>
+</p>
+
+<p>
+  <div><a href="javascript:void()" onclick="$('old_value').toggle();">Show old value</a></div>
+  <div id="old_value" style="display:none;">
+    <%= textilizable @detail, :old_value %>  
+  </div>
+  
+</p>
+<p>
+  <div><a href="javascript:void()" onclick="$('new_value').toggle();">Show new value</a></div>
+  <div id="new_value" style="display:none;">
+    <%= textilizable @detail, :value %>  
+  </div>
+</p>
