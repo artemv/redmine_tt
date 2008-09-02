@@ -60,7 +60,7 @@ class TimesheetController < ApplicationController
       @entries.each do |project,logs|
         project_total = 0
         logs.each do |log|
-          project_total += log.hours
+          project_total += log.hours.to_f
         end
         @total[project] = project_total
       end
