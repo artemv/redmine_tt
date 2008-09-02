@@ -7,5 +7,6 @@ Patches included (see http://www.redmine.org)
 * #1680 Make version description multiline and textilizable
 * #1676 Only show incomplete target versions
 * Issue edit screen: targer version made required field
+* massive Trac migration improvements, see commit 2dc4fc03dc70deb29a2edb91ec55d64e540b009e for some details
 
 Contributed by Texuna Technologies.
