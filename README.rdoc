@@ -9,6 +9,7 @@ Patches included that are not applied to Redmine yet (see http://www.redmine.org
 Some things that don't exist as patches:
 * massive Trac migration improvements, see commit 2dc4fc03dc70deb29a2edb91ec55d64e540b009e for some details
 * Issue edit screen: targer version made required field
+* User's cross-project time log accessible from account page
 
 Some minor changes:
 * Don't fill start date for new issue - ticket creation date is usually not the work start date
