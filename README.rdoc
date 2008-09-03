@@ -1,21 +1,29 @@
-Patches included (see http://www.redmine.org)
+Patches included that are not applied to Redmine yet (see http://www.redmine.org)
 * #1650 Start/end time tracking for timelogging
 * #1671 Show a breakdown of estimated/spent/remaining time for a version
 * #1717 Show diff for issue description change
 * #1705 Use Rails timezones support
-* #1678 Include Estimated Time in issue filters
 * #1680 Make version description multiline and textilizable
 * #1676 Only show incomplete target versions
-* Issue edit screen: targer version made required field
+
+Some things that don't exist as patches:
 * massive Trac migration improvements, see commit 2dc4fc03dc70deb29a2edb91ec55d64e540b009e for some details
+* Issue edit screen: targer version made required field
 
-If you applied previously some of these patches that contain database migrations (in old, not timestamped style) you need to remove them with SQL like 
+Some minor changes:
+* Don't fill start date for new issue - ticket creation date is usually not the work start date
 
-    delete from schema_migrations where version in ('995', '996')
-
-and add their new aliases:
+If you have some errors running rake db:migrate this most likely means you 
+applied previously some of these patches that contain database migrations 
+(in old, not timestamped style). 
+In this case you need to add their new aliases with SQL like:
 
     INSERT INTO schema_migrations (version) VALUES('20080902122005');
-    INSERT INTO schema_migrations (version) VALUES('20080902122006');
+
+(where 20080902122005 is the number of migration reported in error message)
+and remove the number it had in patch (to give a way for migration with the same number from upstream):
+
+    delete from schema_migrations where version in ('995')
+
 
 Contributed by Texuna Technologies.
