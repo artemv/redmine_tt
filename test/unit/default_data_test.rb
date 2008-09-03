@@ -39,6 +39,9 @@ class DefaultDataTest < Test::Unit::TestCase
         assert Redmine::DefaultData::Loader::load(lang)
       rescue ActiveRecord::RecordInvalid => e
         assert false, ":#{lang} default data is invalid (#{e.message})."
+      rescue Exception => e
+        puts "Error with lang '%s'" % lang
+        raise e
       end
     end
   end

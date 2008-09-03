@@ -46,12 +46,9 @@ class Issue < ActiveRecord::Base
   acts_as_activity_provider :find_options => {:include => [:project, :author, :tracker]}
   
   validates_presence_of :subject, :description, :priority, :project, :tracker, :author, :status
-  validates_presence_of :fixed_version, :if => lambda {|i| !i.project.versions.empty? && !i.allow_empty_fixed_version}
   validates_length_of :subject, :maximum => 255
   validates_inclusion_of :done_ratio, :in => 0..100
   validates_numericality_of :estimated_hours, :allow_nil => true
-
-  attr_accessor :allow_empty_fixed_version
 
   def after_initialize
     if new_record?
@@ -87,7 +84,6 @@ class Issue < ActiveRecord::Base
         new_category = category.nil? ? nil : new_project.issue_categories.find_by_name(category.name)
         self.category = new_category
         self.fixed_version = nil
-        self.allow_empty_fixed_version = true
         self.project = new_project
       end
       if new_tracker
