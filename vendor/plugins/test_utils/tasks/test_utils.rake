@@ -23,12 +23,17 @@ class CommonTestFilePathResolver
 end
 
 class FunctionalTestFilePathResolver < CommonTestFilePathResolver
-  def resolve(file_name)
+  def initialize(type_info)
+    super(type_info)
     @dir = 'functional'
+  end    
+
+  def resolve(file_name)    
     one_path = "%s/%s_controller_test.rb" % [@dir, file_name]
     if !File.exist?("test/#{one_path}")
       another_path = super(file_name) 
       raise "No file found: %s nor %s" % [one_path, another_path] if !File.exist?("test/#{another_path}")
+      return another_path
     else
       return one_path
     end
