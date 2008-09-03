@@ -168,25 +168,29 @@ module GLoc
       _charset_required
       _get_lang_file_list(dir).each {|filename|
         
-        # Load file
-        raw_hash = YAML::load(File.read(filename))
-        raw_hash={} unless raw_hash.kind_of?(Hash)
-        filename =~ /([^\/\\]+)\.ya?ml$/
-        lang = $1.to_sym
-        file_charset = raw_hash['file_charset'] || UTF_8
+        begin
+          # Load file
+          raw_hash = YAML::load(File.read(filename))
+          raw_hash={} unless raw_hash.kind_of?(Hash)
+          filename =~ /([^\/\\]+)\.ya?ml$/
+          lang = $1.to_sym
+          file_charset = raw_hash['file_charset'] || UTF_8
+    
+          # Convert string keys to symbols
+          dest_charset= get_charset(lang)
+          _verbose_msg {"Reading file #{filename} [charset: #{file_charset} --> #{dest_charset}]"}
+          symbol_hash = {}
+          Iconv.open(dest_charset, file_charset) do |i|
+            raw_hash.each {|key, value|
+              symbol_hash[key.to_sym] = i.iconv(value)
+            }
+          end
   
-        # Convert string keys to symbols
-        dest_charset= get_charset(lang)
-        _verbose_msg {"Reading file #{filename} [charset: #{file_charset} --> #{dest_charset}]"}
-        symbol_hash = {}
-        Iconv.open(dest_charset, file_charset) do |i|
-          raw_hash.each {|key, value|
-            symbol_hash[key.to_sym] = i.iconv(value)
-          }
+          # Add strings to repos
+          _add_localized_strings(lang, symbol_hash, override)
+        rescue Exception => e
+          raise "Error processing file %s: %s" % [filename, e]
         end
-  
-        # Add strings to repos
-        _add_localized_strings(lang, symbol_hash, override)
       }
       _verbose_msg :stats
     end
