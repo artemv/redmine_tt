@@ -8,12 +8,39 @@
 #   rake blog-create (or u_blog-create)
 #   => Runs test_create for BlogTest (unit test; use u_blog-create to force it if functional test found))
 
+class CommonTestFilePathResolver
+  def initialize(type_info)
+    @dir = type_info[2]
+  end    
+  
+  def resolve(file_name)
+    "%s/%s_test.rb" % [@dir, file_name]
+  end
+  
+  def type
+    @dir
+  end
+end
+
+class FunctionalTestFilePathResolver < CommonTestFilePathResolver
+  def resolve(file_name)
+    @dir = 'functional'
+    one_path = "%s/%s_controller_test.rb" % [@dir, file_name]
+    if !File.exist?("test/#{one_path}")
+      another_path = super(file_name) 
+      raise "No file found: %s nor %s" % [one_path, another_path] if !File.exist?("test/#{another_path}")
+    else
+      return one_path
+    end
+  end
+end
+
 #test file will be matched in the order of this array items 
 TEST_TYPES = [
-    ['u_', "unit/[file_name]_test.rb"],
-    ['f_', "functional/[file_name]_controller_test.rb"],
-    ['i_', "integration/[file_name]_test.rb"],
-    ['l_', "long/[file_name]_test.rb"],
+    ['u_', CommonTestFilePathResolver, "unit"],
+    ['f_', FunctionalTestFilePathResolver],
+    ['i_', CommonTestFilePathResolver, "integration"],
+    ['l_', CommonTestFilePathResolver, "long"],
 ]
 
 rule "" do |t|
@@ -23,13 +50,15 @@ rule "" do |t|
     file_name = $2
     test_name = $3
 
-    path_getter = lambda { |type_info| type_info[1].gsub '[file_name]', file_name}
+    path_getter = lambda do |type_info| 
+      resolver = type_info[1].new(type_info)
+      resolver.resolve(file_name)
+    end
     file_path = nil
     TEST_TYPES.each do |type_info|
       my_file_path = path_getter.call(type_info)
       if flag == type_info[0]
-        type_info[1].match /((.+)\/)/
-        type = $2
+        type = type_info[1].new(type_info).type
         puts "forced #{type} test"
         file_path = my_file_path
         break
@@ -55,7 +84,7 @@ rule "" do |t|
       raise "No file found for #{file_name}"
     end
 
-		begin
+    begin
       sh "ruby -Ilib:test test/#{file_path} -n /^test_#{test_name}/"
     rescue Exception => e
       #no logger here, oops!
