@@ -182,11 +182,13 @@ class User < ActiveRecord::Base
   def <=>(user)
     if user.nil?
       -1
-    elsif lastname.to_s.downcase == user.lastname.to_s.downcase
-      firstname.to_s.downcase <=> user.firstname.to_s.downcase
     else
-      lastname.to_s.downcase <=> user.lastname.to_s.downcase
+      self.fullname.downcase <=> user.fullname.downcase
     end
+  end
+  
+  def fullname
+    "#{firstname} #{lastname}"
   end
   
   def to_s

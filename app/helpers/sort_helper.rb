@@ -83,7 +83,11 @@ module SortHelper
   # Use this to sort the controller's table items collection.
   #
   def sort_clause()
-    session[@sort_name][:key] + ' ' + (session[@sort_name][:order] || 'ASC')
+    order = session[@sort_name][:order] || 'ASC'
+    if (session[@sort_name][:key] == "users.lastname")
+      return "users.firstname %s, users.lastname %s" % [order, order]
+    end
+    session[@sort_name][:key] + ' ' + order
   end
 
   # Returns a link which sorts by the named column.
@@ -117,7 +121,7 @@ module SortHelper
                   {:href => url_for(url_options)}) +
     (icon ? nbsp(2) + image_tag(icon) : '')
   end
-
+  
   # Returns a table header <th> tag with a sort link for the named column
   # attribute.
   #
