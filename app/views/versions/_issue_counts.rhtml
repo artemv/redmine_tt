@@ -61,7 +61,7 @@
             <td class="progress count">
                 <%= count = metrics[:count]; progress_bar((count[:done].to_f / count[:total])*100, 
                       :legend => 
-                        "<span title=\"#{l(:label_closed_issues_plural)}\">" + 
+                        "<span title=\"#{l(:label_done_issues_genitive_case)}\">" + 
                         "#{count[:done]}</span>/" + 
                         "<span title=\"#{l(:label_total).chars.downcase}\">" + 
                         "#{count[:total]}</span>",                          

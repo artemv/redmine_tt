@@ -346,6 +346,7 @@ label_open_issues: open
 label_open_issues_plural: open
 label_closed_issues: closed
 label_closed_issues_plural: closed
+label_done_issues_genitive_case: done
 label_total: Total
 label_permissions: Permissions
 label_current_status: Current status
