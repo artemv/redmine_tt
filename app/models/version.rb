@@ -158,13 +158,13 @@ class Version < ActiveRecord::Base
       metrics[:remaining] += remaining
       metrics[:total] += (remaining + spent)
       
-      categories_metrics[category][:count] ||= {:open => 0, :done => 0, :total => 0}
+      categories_metrics[category][:count] ||= {:undone => 0, :done => 0, :total => 0}
       metrics = categories_metrics[category][:count]
       metrics[:total] += 1
       if issue.done?
         metrics[:done] += 1 
       else
-        metrics[:open] += 1 
+        metrics[:undone] += 1 
       end
     end
     categories_metrics

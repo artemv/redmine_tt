@@ -20,10 +20,10 @@ require File.dirname(__FILE__) + '/../test_helper'
 class VersionTest < Test::Unit::TestCase
   fixtures :all
 
-  def verify_counts(count_metrics, open, closed)
-    assert_equal open + closed, count_metrics[:total]
-    assert_equal open, count_metrics[:open]
-    assert_equal closed, count_metrics[:closed]    
+  def verify_counts(count_metrics, undone, done)
+    assert_equal undone + done, count_metrics[:total]
+    assert_equal undone, count_metrics[:undone]
+    assert_equal done, count_metrics[:done]    
   end
   
   def test_get_grouped_metrics_count
