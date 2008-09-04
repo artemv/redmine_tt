@@ -59,10 +59,10 @@
         </tr>
         <tr class="<%= color_class %>">
             <td class="progress count">
-                <%= count = metrics[:count]; progress_bar((count[:closed].to_f / count[:total])*100, 
+                <%= count = metrics[:count]; progress_bar((count[:done].to_f / count[:total])*100, 
                       :legend => 
                         "<span title=\"#{l(:label_closed_issues_plural)}\">" + 
-                        "#{count[:closed]}</span>/" + 
+                        "#{count[:done]}</span>/" + 
                         "<span title=\"#{l(:label_total).chars.downcase}\">" + 
                         "#{count[:total]}</span>",                          
                       :width => "#{(count[:total].to_f / max[:count] * max_progress_width).floor}px;") %>

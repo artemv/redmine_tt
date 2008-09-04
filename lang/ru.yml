@@ -123,6 +123,7 @@ field_status: Статус
 field_notes: Примечания
 field_is_closed: Задача закрыта
 field_is_default: Значение по умолчанию
+field_is_development_complete: Разработка завершена
 field_tracker: Трекер
 field_subject: Тема
 field_due_date: Дата выполнения

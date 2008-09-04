@@ -126,6 +126,7 @@ field_status: Status
 field_notes: Notes
 field_is_closed: Issue closed
 field_is_default: Default value
+field_is_development_complete: Development complete
 field_tracker: Tracker
 field_subject: Subject
 field_due_date: Due date

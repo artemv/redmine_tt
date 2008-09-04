@@ -52,7 +52,7 @@ class VersionsControllerTest < Test::Unit::TestCase
     end
   end
   
-  #specific bug was reproduced when there were no time records and all the issues were closed
+  #specific bug was reproduced when there were no time records and all the issues were done
   def test_issue_status_by_no_division_by_zero
     version = versions(:versions_003)
     user = users(:users_002)
@@ -64,7 +64,7 @@ class VersionsControllerTest < Test::Unit::TestCase
     version.fixed_issues.all? do |i| 
       assert_equal 0, i.spent_hours 
       assert !i.estimated_hours || i.estimated_hours == 0
-      assert i.closed?
+      assert i.done?
     end
     xhr :get, :status_by, :id => version.id
     assert_response :success

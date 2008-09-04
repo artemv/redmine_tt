@@ -194,6 +194,11 @@ class Issue < ActiveRecord::Base
   def closed?
     self.status.is_closed?
   end
+
+  #can't tell the meaning much better than code
+  def done?
+    closed? || self.status.is_development_complete?
+  end
   
   # Users the issue can be assigned to
   def assignable_users

@@ -146,16 +146,16 @@ class Version < ActiveRecord::Base
       metrics[:estimated] += estimated
       spent = spent_times[issue.id] || 0
       metrics[:spent] += spent
-      remaining = issue.closed? ? 0 : estimated - spent
+      remaining = issue.done? ? 0 : estimated - spent
       remaining = 0 if remaining < 0
       metrics[:remaining] += remaining
       metrics[:total] += (remaining + spent)
       
-      categories_metrics[category][:count] ||= {:open => 0, :closed => 0, :total => 0}
+      categories_metrics[category][:count] ||= {:open => 0, :done => 0, :total => 0}
       metrics = categories_metrics[category][:count]
       metrics[:total] += 1
-      if issue.closed?
-        metrics[:closed] += 1 
+      if issue.done?
+        metrics[:done] += 1 
       else
         metrics[:open] += 1 
       end
