@@ -676,3 +676,7 @@ div.wiki pre.linebreak {
     margin:0;
     padding:0;
 }
+
+.not_estimated .count {
+    color:red;
+}

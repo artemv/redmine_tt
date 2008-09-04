@@ -315,7 +315,11 @@ label_public_projects: Общие проекты
 label_open_issues: открытый
 label_open_issues_plural: открытые
 label_closed_issues: закрытый
-label_done_issues_genitive_case: сделанных
+label_done_issues_genitive_case: выполненных
+label_done_issues: выполненный
+label_done_issues_plural: выполненные
+label_undone_issues: невыполненный
+label_undone_issues_plural: невыполненные
 label_total: Всего
 label_permissions: Права доступа
 label_current_status: Текущий статус

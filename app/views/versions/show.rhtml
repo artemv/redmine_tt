@@ -12,6 +12,22 @@
     <td class="label"><%= l(:field_estimated_hours) %></td>
     <td class="total-hours"><%= html_hours(lwr(:label_f_hour, @version.estimated_hours)) %></td>
 </tr>
+<% if @version.not_estimated_undone_count > 0 %>
+<tr>
+    <td class="label"><%= l(:label_not_estimated_and_undone) %></td>
+    <td class="not_estimated total-hours"><%= link_to(" <span class = \"count\">%s</span> %s" % 
+        [@version.not_estimated_undone_count, lwr(:label_issue, @version.not_estimated_undone_count).downcase],                                             
+        {:controller => 'issues', 
+        :action => 'index',
+        :project_id => @version.project,
+        :set_filter => 1,
+        :fields => ["estimated_hours", "fixed_version_id", "status_id"],
+        :values => {"estimated_hours" => [1], "fixed_version_id" => [@version], "status_id" => [1]},
+        :operators => {"estimated_hours" => "!*", "fixed_version_id" => "=", "status_id" => "undone"}
+        }
+)%></td>
+</tr>
+<% end %>
 <% if User.current.allowed_to?(:view_time_entries, @project) %>
 <tr>
     <td class="label"><%= l(:label_spent_time) %></td>

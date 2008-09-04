@@ -63,6 +63,8 @@ class Query < ActiveRecord::Base
                   "!"   => :label_not_equals,
                   "o"   => :label_open_issues,
                   "c"   => :label_closed_issues,
+                  "done"   => :label_done_issues,
+                  "undone"   => :label_undone_issues,
                   "!*"  => :label_none,
                   "*"   => :label_all,
                   ">="   => '>=',
@@ -81,7 +83,7 @@ class Query < ActiveRecord::Base
   cattr_reader :operators
     
   @@operators_by_filter_type = { :list => [ "=", "!" ],
-                                 :list_status => [ "o", "=", "!", "c", "*" ],
+                                 :list_status => [ "o", "c", "=", "!", "*", "done", "undone" ],
                                  :list_optional => [ "=", "!", "!*", "*" ],
                                  :list_subprojects => [ "*", "!*", "=" ],
                                  :date => [ "<t+", ">t+", "t+", "t", "w", ">t-", "<t-", "t-" ],
@@ -127,7 +129,7 @@ class Query < ActiveRecord::Base
           # filter requires one or more values
           (values_for(field) and !values_for(field).first.blank?) or 
           # filter doesn't require any value
-          ["o", "c", "!*", "*", "t", "w"].include? operator_for(field)
+          ["o", "c", "done", "undone", "!*", "*", "t", "w"].include? operator_for(field)
     end if filters
   end
   
@@ -326,6 +328,10 @@ class Query < ActiveRecord::Base
         sql = sql + "#{IssueStatus.table_name}.is_closed=#{connection.quoted_false}" if field == "status_id"
       when "c"
         sql = sql + "#{IssueStatus.table_name}.is_closed=#{connection.quoted_true}" if field == "status_id"
+      when "undone"
+        sql = sql + "#{IssueStatus.table_name}.is_closed=#{connection.quoted_false} AND #{IssueStatus.table_name}.is_development_complete=#{connection.quoted_false}" if field == "status_id"
+      when "done"
+        sql = sql + "#{IssueStatus.table_name}.is_closed = #{connection.quoted_true} OR #{IssueStatus.table_name}.is_development_complete=#{connection.quoted_true}" if field == "status_id"
       when ">t-"
         sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date((Date.today - v.first.to_i).to_time), connection.quoted_date((Date.today + 1).to_time)]
       when "<t-"

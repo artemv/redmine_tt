@@ -102,6 +102,13 @@ class Version < ActiveRecord::Base
     @closed_issues_count ||= Issue.count(:all, :conditions => ["fixed_version_id = ? AND is_closed = ?", self.id, true], :include => :status)
   end
   
+  def not_estimated_undone_count
+    @not_estimated_undone_count ||= Issue.count(:all, :conditions => 
+        ["fixed_version_id = ? AND estimated_hours IS NULL AND " + 
+          "(is_closed = ? AND is_development_complete = ?)", self.id, false, 
+        false], :include => :status)
+  end
+  
   def wiki_page
     if project.wiki && !wiki_page_title.blank?
       @wiki_page ||= project.wiki.find_page(wiki_page_title)
