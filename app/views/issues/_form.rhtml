@@ -31,7 +31,7 @@
                      :class => 'small', :tabindex => 199) if authorize_for('projects', 'add_issue_category') %></p>
 <%= content_tag('p', f.select(:fixed_version_id, 
                               (@issue.active_versions.sort.collect {|v| [v.name, v.id]}),
-                              { :include_blank => true, :required => true })) unless @project.versions.empty? %>
+                              { :include_blank => true})) unless @project.versions.empty? %>
 </div>
 
 <div class="splitcontentright">
