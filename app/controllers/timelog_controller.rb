@@ -19,6 +19,7 @@ class TimelogController < ApplicationController
   menu_item :issues
   before_filter :find_project, :authorize, :only => [:edit, :destroy]
   before_filter :find_optional_project, :only => [:report, :details]
+  before_filter :find_user, :only => :details
 
   verify :method => :post, :only => :destroy, :redirect_to => { :action => :details }
   
@@ -248,8 +249,6 @@ private
       @project = @issue.project
     elsif params[:project_id] && !params[:project_id].empty?
       @project = Project.find(params[:project_id])
-    elsif params[:user_id]
-      @user = User.find(params[:user_id])
     else
       render_404
       return false
@@ -257,6 +256,12 @@ private
   rescue ActiveRecord::RecordNotFound
     render_404
   end
+
+  def find_user
+    if params[:user_id]
+      @user = User.find(params[:user_id])
+    end
+  end  
   
   def find_optional_project
     if !params[:issue_id].blank?
