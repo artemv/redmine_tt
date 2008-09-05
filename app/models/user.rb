@@ -183,14 +183,11 @@ class User < ActiveRecord::Base
     if user.nil?
       -1
     else
-      self.fullname.downcase <=> user.fullname.downcase
+      namer = lambda {|u| [u.firstname.to_s.downcase, u.lastname.to_s.downcase]}
+      namer.call(self) <=> namer.call(user)
     end
   end
-  
-  def fullname
-    "#{firstname} #{lastname}"
-  end
-  
+   
   def to_s
     name
   end
