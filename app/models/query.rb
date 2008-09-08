@@ -88,7 +88,7 @@ class Query < ActiveRecord::Base
                                  :list_subprojects => [ "*", "!*", "=" ],
                                  :date => [ "<t+", ">t+", "t+", "t", "w", ">t-", "<t-", "t-" ],
                                  :date_past => [ ">t-", "<t-", "t-", "t", "w" ],
-                                 :string => [ "=", "~", "!", "!~" ],
+                                 :string => [ "=", "~", "!", "!~", "!*", "*"],
                                  :text => [  "~", "!~" ],
                                  :integer => [ "=", ">=", "<=", "!*", "*" ] }
 
