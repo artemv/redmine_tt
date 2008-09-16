@@ -35,7 +35,15 @@
 </tr>
 <tr>
     <td class="label"><%= l(:label_remaining_time) %></td>
-    <td class="total-hours"><%= html_hours(lwr(:label_f_hour, @version.remaining_hours)) %></td>
+    <td class="total-hours"><%= link_to(html_hours(lwr(:label_f_hour, @version.remaining_hours)),
+        {:controller => 'issues', 
+        :action => 'index',
+        :project_id => @version.project,
+        :set_filter => 1,
+        :fields => ["fixed_version_id", "status_id"],
+        :operators => {"fixed_version_id" => "=", "status_id" => "undone"},
+        :values => {"fixed_version_id" => [@version], "status_id" => [1]},
+        }) %></td>
 </tr>
 <tr>
     <% title = "#{l(:label_spent_time)} + #{l(:label_remaining_time)}" %>
