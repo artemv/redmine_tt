@@ -8,7 +8,9 @@
 
 </div>
 &nbsp;
-<%= render :partial => 'common/file', :locals => {:content => @content, :filename => @attachment.filename} %>
+<%= if @attachment.filesize < 100.kilobytes
+  render :partial => 'common/file', :locals => {:content => @content, :filename => @attachment.filename} 
+end %>
 
 <% content_for :header_tags do -%>
     <%= stylesheet_link_tag "scm" -%>
