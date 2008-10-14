@@ -53,7 +53,7 @@ class Attachment < ActiveRecord::Base
       if @temp_file.size > 0
         self.filename = sanitize_filename(@temp_file.original_filename)
         self.disk_filename = Attachment.disk_filename(filename)
-        self.content_type = @temp_file.content_type.to_s.chomp
+        self.content_type = guess_mime_type(@temp_file.original_filename)
         self.filesize = @temp_file.size
       end
     end
@@ -109,14 +109,22 @@ class Attachment < ActiveRecord::Base
   end
   
   def guess_and_fill_mime_type(save = true)
+    type = guess_mime_type(filename)    
+    if type
+      self.content_type = type
+      self.save! if save       
+    end
+    type
+  end
+  
+  def guess_mime_type(filename)
     require 'mime/types'
-    types = MIME::Types.type_for(self.filename)
+    types = MIME::Types.type_for(filename)
     if !types.empty?
       content_type = types[0].content_type
-      self.content_type = content_type
-      self.save! if save
-      true
+      return content_type
     end
+    return nil
   end
   
 private
