@@ -65,7 +65,12 @@ class TimeEntry < ActiveRecord::Base
           :activerecord_error_field_must_be_set_if_other_is_not, 
           ll(User.current.language, :field_hours))
     end
-      
+    
+    if start_time && spent_on && start_time.to_date != spent_on
+      errors.add :start_time, ll(User.current.language, 
+          :error_must_be_same_day_with_spent_on)
+    end
+    
     errors.add :project_id, :activerecord_error_invalid if project.nil?
     errors.add :issue_id, :activerecord_error_invalid if (issue_id && !issue) || (issue && project!=issue.project)
   end

@@ -662,6 +662,7 @@ text_and: и
 text_time_entry_intersecting_notice: Обратите внимание, что эта запись о потраченном времени (%s) пересекается с %s.
 text_time_entry_intersecting_notice_entry: записью
 text_time_entry_intersecting_notice_entry_plural: записями
+error_must_be_same_day_with_spent_on: должно относится к дню, указанном в поле « Дата »
 
 field_parent_title: Parent page
 label_issue_watchers: Watchers

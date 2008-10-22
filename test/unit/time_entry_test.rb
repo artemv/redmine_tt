@@ -123,4 +123,16 @@ class TimeEntryTest < Test::Unit::TestCase
     assert_intersects(:big_intersecting_time_entry, :time_entry_in_progress)
     assert_intersects(:big_intersecting_time_entry, :intersecting_time_entry)
   end
+
+  def test_start_time_must_be_same_date_as_spent_on
+    entry = TimeEntry.new(successful_params)
+    entry.spent_on = Date.today
+    entry.start_time = Time.now - 1.day
+    assert_error_on(entry, :start_time)
+    entry.start_time = Time.now + 1.day
+    assert_error_on(entry, :start_time)
+    entry.start_time = Time.now
+    assert_no_errors(entry, :validate => true)
+  end
+
 end
