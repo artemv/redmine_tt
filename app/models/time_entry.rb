@@ -40,6 +40,8 @@ class TimeEntry < ActiveRecord::Base
   validates_numericality_of :hours, :allow_nil => true
   validates_length_of :comments, :maximum => 255, :allow_nil => true
 
+  MAX_START_END_TIME_DISTANCE = 15 #hours
+  
   def after_initialize
     if new_record? && self.activity.nil?
       if default_activity = Enumeration.default('ACTI')
@@ -71,6 +73,14 @@ class TimeEntry < ActiveRecord::Base
           :error_must_be_same_day_with_spent_on)
     end
     
+    if start_time && end_time && !hours && 
+        (end_time - start_time) > MAX_START_END_TIME_DISTANCE.hours
+      
+      errors.add :end_time, ll(User.current.language, 
+          :error_max_distance_between_start_and_end_time, 
+          MAX_START_END_TIME_DISTANCE)
+    end
+
     errors.add :project_id, :activerecord_error_invalid if project.nil?
     errors.add :issue_id, :activerecord_error_invalid if (issue_id && !issue) || (issue && project!=issue.project)
   end

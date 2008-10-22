@@ -135,4 +135,17 @@ class TimeEntryTest < Test::Unit::TestCase
     assert_no_errors(entry, :validate => true)
   end
 
+  def test_distance_between_start_and_end_time_is_reasonable
+    entry = TimeEntry.new(successful_params)
+    entry.start_time = Time.utc(2008, 'Oct', 22, 15, 50)
+    entry.spent_on = entry.start_time.to_date
+    
+    entry.end_time = entry.start_time + 
+      TimeEntry::MAX_START_END_TIME_DISTANCE.hours + 1.minute
+    
+    assert_error_on(entry, :end_time)
+    entry.end_time -= 1.minute
+    assert_no_errors(entry, :validate => true)
+  end
+
 end
