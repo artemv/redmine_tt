@@ -148,4 +148,16 @@ class TimeEntryTest < Test::Unit::TestCase
     assert_no_errors(entry, :validate => true)
   end
 
+  def test_end_time_must_be_after_start_time
+    entry = TimeEntry.new(successful_params)
+    entry.start_time = Time.utc(2008, 'Oct', 22, 15, 50)
+    entry.spent_on = entry.start_time.to_date
+    
+    entry.end_time = entry.start_time - 1.minute
+    
+    assert_error_on(entry, :end_time)
+    entry.end_time = entry.start_time + 1.minute
+    assert_no_errors(entry, :validate => true)
+  end
+
 end

@@ -664,6 +664,7 @@ text_time_entry_intersecting_notice_entry: записью
 text_time_entry_intersecting_notice_entry_plural: записями
 error_must_be_same_day_with_spent_on: должно относится к дню, указанном в поле « Дата »
 error_max_distance_between_start_and_end_time: должно быть в пределах %d часов от « Времени начала »
+error_end_time_must_be_after_start_time: должно быть после « Времени начала »
 
 field_parent_title: Parent page
 label_issue_watchers: Watchers

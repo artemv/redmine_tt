@@ -85,6 +85,7 @@ error_scm_annotate: "The entry does not exist or can not be annotated."
 error_issue_not_found_in_project: 'The issue was not found or does not belong to this project'
 error_must_be_same_day_with_spent_on: must be from the day of « Date » field
 error_max_distance_between_start_and_end_time: must be in %d hours span from « Start Time »
+error_end_time_must_be_after_start_time: must be after « Start Time »
 
 mail_subject_lost_password: Your %s password
 mail_body_lost_password: 'To change your password, click on the following link:'

@@ -73,12 +73,18 @@ class TimeEntry < ActiveRecord::Base
           :error_must_be_same_day_with_spent_on)
     end
     
-    if start_time && end_time && !hours && 
-        (end_time - start_time) > MAX_START_END_TIME_DISTANCE.hours
+    if start_time && end_time
       
-      errors.add :end_time, ll(User.current.language, 
-          :error_max_distance_between_start_and_end_time, 
-          MAX_START_END_TIME_DISTANCE)
+      if !hours && (end_time - start_time) > MAX_START_END_TIME_DISTANCE.hours
+        errors.add :end_time, ll(User.current.language, 
+            :error_max_distance_between_start_and_end_time, 
+            MAX_START_END_TIME_DISTANCE)
+      end
+      
+      if start_time >= end_time
+        errors.add :end_time, ll(User.current.language, 
+            :error_end_time_must_be_after_start_time)
+      end
     end
 
     errors.add :project_id, :activerecord_error_invalid if project.nil?
