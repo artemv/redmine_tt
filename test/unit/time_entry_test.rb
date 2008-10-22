@@ -141,7 +141,7 @@ class TimeEntryTest < Test::Unit::TestCase
     entry.spent_on = entry.start_time.to_date
     
     entry.end_time = entry.start_time + 
-      TimeEntry::MAX_START_END_TIME_DISTANCE.hours + 1.minute
+      TimeEntry::MAX_START_END_TIME_DISTANCE + 1.minute
     
     assert_error_on(entry, :end_time)
     entry.end_time -= 1.minute

@@ -235,4 +235,29 @@ class ApplicationController < ActionController::Base
     rs = ::ActionController::Routing::Routes
     rs.generate url_parameters
   end
+
+  def build_timelog_update_message
+    url_writer = lambda do |entry| 
+      "<a href = \"#{url_path(:controller => :timelog, :action => :edit, 
+        :id => entry.id)}\">##{entry.issue_id}-#{entry.id}</a>"
+    end
+    
+    msg = l(:notice_successful_update)
+    intersecting = @time_entry.find_intersecting_entries
+    logger.debug "intersecting = #{intersecting.inspect}"
+    if !intersecting.empty? 
+
+      list = lwr(:text_time_entry_intersecting_notice_entry, 
+        intersecting.size) + ' ' + intersecting.
+        map { |entry| url_writer.call(entry) }.
+        to_sentence(:skip_last_comma => true, :connector => l(:text_and))
+
+      msg += ' ' + l(:text_time_entry_intersecting_notice, 
+        url_writer.call(@time_entry), list)
+    end
+    if diff = @time_entry.distance_differ_from_hours?
+      msg += ' ' + l(:text_time_entry_distance_differ_from_hours, 
+        diff[:distance], diff[:hours])
+    end
+  end
 end

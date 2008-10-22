@@ -84,7 +84,7 @@ error_scm_command_failed: "An error occurred when trying to access the repositor
 error_scm_annotate: "The entry does not exist or can not be annotated."
 error_issue_not_found_in_project: 'The issue was not found or does not belong to this project'
 error_must_be_same_day_with_spent_on: must be from the day of « Date » field
-error_max_distance_between_start_and_end_time: must be in %d hours span from « Start Time »
+error_max_distance_between_start_and_end_time: must be in %0f hours span from « Start Time »
 error_end_time_must_be_after_start_time: must be after « Start Time »
 
 mail_subject_lost_password: Your %s password
@@ -637,6 +637,7 @@ text_enumeration_category_reassign_to: 'Reassign them to this value:'
 text_email_delivery_not_configured: "Email delivery is not configured, and notifications are disabled.\nConfigure your SMTP server in config/email.yml and restart the application to enable them."
 text_not_assigned: Not assigned
 text_hours_short: h
+text_time_entry_distance_differ_from_hours: Note that distance from « Start Time » to « End Time » (%.02f) differs from « Hours » (%.02f).
 
 default_role_manager: Manager
 default_role_developper: Developer

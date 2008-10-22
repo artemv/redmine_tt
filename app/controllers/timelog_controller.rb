@@ -204,26 +204,8 @@ class TimelogController < ApplicationController
       end
     end
     
-    url_writer = lambda do |entry| 
-      "<a href = \"#{url_path(:controller => :timelog, :action => :edit, 
-        :id => entry.id)}\">##{entry.issue_id}-#{entry.id}</a>"
-    end
-    
     if request.post? and @time_entry.save
-      intersecting = @time_entry.find_intersecting_entries
-      logger.debug "intersecting = #{intersecting.inspect}"
-      msg = l(:notice_successful_update)
-      if !intersecting.empty? 
-        
-        list = lwr(:text_time_entry_intersecting_notice_entry, 
-          intersecting.size) + ' ' + intersecting.
-          map { |entry| url_writer.call(entry) }.
-          to_sentence(:skip_last_comma => true, :connector => l(:text_and))
-        
-        msg += ' ' + l(:text_time_entry_intersecting_notice, 
-          url_writer.call(@time_entry), list)
-      end
-      flash[:notice] = msg
+      flash[:notice] = build_timelog_update_message
       redirect_to(params[:back_url].blank? ? {:action => 'details', :project_id => @time_entry.project} : params[:back_url])
       return
     end    

@@ -181,14 +181,14 @@ class IssuesController < ApplicationController
       @time_entry.attributes = params[:time_entry]
       attachments = attach_files(@issue, params[:attachments])
       attachments.each {|a| journal.details << JournalDetail.new(:property => 'attachment', :prop_key => a.id, :value => a.filename)}
-      if (@time_entry.hours.nil? || @time_entry.valid?) && @issue.save
+      if (@time_entry.empty? || @time_entry.valid?) && @issue.save #execute block if everything is valid; empty time entry is OK
         # Log spend time
-        if current_role.allowed_to?(:log_time)
-          @time_entry.save
+        if !@time_entry.empty? && current_role.allowed_to?(:log_time)
+          flash[:notice] = build_timelog_update_message if @time_entry.save
         end
         if !journal.new_record?
           # Only send notification if something was actually changed
-          flash[:notice] = l(:notice_successful_update)
+          flash[:notice] ||= l(:notice_successful_update)
           Mailer.deliver_issue_edit(journal) if Setting.notified_events.include?('issue_updated')
         end
         redirect_to(params[:back_to] || {:action => 'show', :id => @issue})

@@ -40,7 +40,8 @@ class TimeEntry < ActiveRecord::Base
   validates_numericality_of :hours, :allow_nil => true
   validates_length_of :comments, :maximum => 255, :allow_nil => true
 
-  MAX_START_END_TIME_DISTANCE = 15 #hours
+  MAX_START_END_TIME_DISTANCE = 15.hours
+  TIME_WARNING_PRECISION = 2.minutes
   
   def after_initialize
     if new_record? && self.activity.nil?
@@ -55,7 +56,8 @@ class TimeEntry < ActiveRecord::Base
   end
   
   def validate
-    errors.add :hours, :activerecord_error_invalid if hours && (hours >= 1000 || hours < 0)
+    errors.add :hours, :activerecord_error_invalid if hours && 
+      (hours >= 1000 || hours < 0)
     
     if !start_time && !hours
       #rather verbose, but l() always translate to English here for some reason
@@ -75,10 +77,10 @@ class TimeEntry < ActiveRecord::Base
     
     if start_time && end_time
       
-      if !hours && (end_time - start_time) > MAX_START_END_TIME_DISTANCE.hours
+      if !hours && (end_time - start_time) > MAX_START_END_TIME_DISTANCE
         errors.add :end_time, ll(User.current.language, 
             :error_max_distance_between_start_and_end_time, 
-            MAX_START_END_TIME_DISTANCE)
+            MAX_START_END_TIME_DISTANCE / 3600)
       end
       
       if start_time >= end_time
@@ -134,5 +136,19 @@ class TimeEntry < ActiveRecord::Base
           "end_time > :start_time and end_time < :end_time" +
           ")" + 
           "and id <> :id", params])
+  end
+  
+  def distance_differ_from_hours?
+    return if !end_time || !start_time || !hours
+    distance = end_time - start_time
+    if (distance - hours.hours).abs >= TIME_WARNING_PRECISION
+      {:distance => distance/3600, :hours => hours}
+    end    
+  end
+  
+  def empty?
+    result = !hours && !start_time && !end_time && comments.blank?
+    #puts "hours = %s, activity_id = %s, start_time = %s, end_time = %s, comments = %s" % [hours, activity_id, start_time, end_time, comments].map(&:inspect)
+    result
   end
 end
