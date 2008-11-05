@@ -64,7 +64,7 @@ namespace :redmine do
   end
   
   desc 'Trac migration script'
-  task :migrate_from_trac => :environment do
+  task :migrate_from_trac_011 => :environment do
 
     module TracMigrate
         ID_SHIFTS = {:edubase => 40000, :ito => 50000}

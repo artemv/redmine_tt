@@ -65,7 +65,7 @@ namespace :redmine do
   
 
   desc 'Trac migration script'
-  task :migrate_from_trac => :environment do
+  task :migrate_from_trac_08_4 => :environment do
     
     module TracMigrate
         ID_SHIFTS = {:tda => 0, :bmlsop => 10000, :lluk => 20000}
