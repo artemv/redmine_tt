@@ -69,7 +69,7 @@ namespace :redmine do
     
     module TracMigrate
         ID_SHIFTS = {:mla => 60000, :"city-and-hackney" => 70000, 
-          :vrg => 80000}
+          :vrg => 80000, :mhmds => 90000}
      
         DEFAULT_STATUS = IssueStatus.default
         new_status = IssueStatus.find_by_name('Pending')
@@ -917,7 +917,7 @@ namespace :redmine do
     
     DEFAULT_PORTS = {'mysql' => 3306, 'postgresql' => 5432}
     
-    prompt('Trac directory', :default => '/opt/tracker/VRG') {|directory| TracMigrate.set_trac_directory directory.strip}
+    prompt('Trac directory', :default => '/opt/tracker/MHMDS') {|directory| TracMigrate.set_trac_directory directory.strip}
     prompt('Trac database adapter (sqlite, sqlite3, mysql, postgresql)', :default => 'sqlite3') {|adapter| TracMigrate.set_trac_adapter adapter}
     unless %w(sqlite sqlite3).include?(TracMigrate.trac_adapter)
       prompt('Trac database host', :default => 'localhost') {|host| TracMigrate.set_trac_db_host host}
@@ -928,7 +928,7 @@ namespace :redmine do
       prompt('Trac database password') {|password| TracMigrate.set_trac_db_password password}
     end
     prompt('Trac database encoding', :default => 'UTF-8') {|encoding| TracMigrate.encoding encoding}
-    prompt('Target project identifier', :default => 'vrg') {|identifier| TracMigrate.target_project_identifier identifier}
+    prompt('Target project identifier', :default => 'mhmds') {|identifier| TracMigrate.target_project_identifier identifier}
     puts
     
     TracMigrate.migrate
