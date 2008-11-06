@@ -88,7 +88,9 @@ namespace :redmine do
                           'pending' => pending_status,
                           'done' => resolved_status,
                           'closed' => closed_status,
-                          'Accepted' => pending_status
+                          'Accepted' => pending_status,
+                          'Proposed' => pending_status,
+                          'Archieved' => pending_status,
                           }
 	                          
         priorities = Enumeration.get_values('IPRI')
@@ -713,11 +715,11 @@ For example, the old ticket number #{sample_id} became ##{project_ids_shift + sa
         	    puts "custom field #{custom.inspect} not found in custom_field_map" if custom.name != TYPE_CUSTOM_FIELD
         	    next
         	  end
-                  i = CustomValue.new :custom_field => custom_field_map[custom.name],
+                  cv = CustomValue.new :custom_field => custom_field_map[custom.name],
                                       :value => custom.value
-                  i.customized = i
-                  if !i.save                
-                    puts "error saving custom attribute (ignoring): #{i.errors.inspect}"
+                  cv.customized = i
+                  if !cv.save                
+                    puts "error saving custom attribute (ignoring): #{cv.errors.inspect}"
                     next
                   end
                   migrated_custom_values += 1
