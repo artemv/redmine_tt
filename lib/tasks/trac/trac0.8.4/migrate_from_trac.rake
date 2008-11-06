@@ -69,7 +69,11 @@ namespace :redmine do
     
     module TracMigrate
         ID_SHIFTS = {:mla => 60000, :"city-and-hackney" => 70000, 
-          :vrg => 80000, :mhmds => 90000, :hps => 100000}
+          :vrg => 80000, :mhmds => 90000, :hps => 100000, 
+          :"Soltex-core" => 110000, :"bml-maps" => 120000, 
+          :"healey-baker" => 130000, :bitcut => 140000, :nduw => 150000, 
+          :"ics-demo" => 160000, :"sve-web-site" => 170000, 
+          :"tt-web-site" => 180000, :rap => 190000}
      
         DEFAULT_STATUS = IssueStatus.default
         new_status = IssueStatus.find_by_name('Pending')
@@ -366,8 +370,12 @@ namespace :redmine do
         u
       end
       
+      def self.project_ids_shift
+        ID_SHIFTS[@target_project.identifier.to_sym]
+      end
+      
       def self.new_ticket_id(old_id)
-        shift = ID_SHIFTS[@target_project.identifier.to_sym]
+        shift = project_ids_shift
         raise "ID shift not defined for project #{@target_project.identifier}!" if !shift
         old_id.to_i + shift
       end
@@ -457,6 +465,13 @@ namespace :redmine do
       end
 
       def self.migrate
+        sample_id = 8
+        @target_project.description = %Q{
+*If you are looking for an old ticket created in Trac, add #{project_ids_shift} to the old ticket number.* 
+For example, the old ticket number #{sample_id} became ##{project_ids_shift + sample_id}.\r\n\r\n
+*To navigate to a ticket by number, enter the number into the Search field (at the top-right of the page) and press Enter key.*}
+        @target_project.save!
+
         establish_connection
 
         # Quick database test
@@ -857,7 +872,12 @@ namespace :redmine do
         TRACKER_MAPPING.values.uniq.each do |tracker|
           project.trackers << tracker unless project.trackers.include?(tracker)          
         end
-        @target_project = project.new_record? ? nil : project
+        @target_project = project
+      end
+      
+      def self.target_project_name(name)
+        @target_project.name = name
+        @target_project.save!
       end
       
       def self.connection_params
@@ -917,8 +937,9 @@ namespace :redmine do
     end
     
     DEFAULT_PORTS = {'mysql' => 3306, 'postgresql' => 5432}
+    puts "Usage: rake redmine:redmine:migrate_from_trac_08_4 [trac project name] [redmine project id] [redmine project name]" if ARGV.length < 3
     
-    prompt('Trac directory', :default => '/opt/tracker/HPS') {|directory| TracMigrate.set_trac_directory directory.strip}
+    prompt('Trac directory', :default => '/opt/tracker/%s' % ARGV[1]) {|directory| TracMigrate.set_trac_directory directory.strip}
     prompt('Trac database adapter (sqlite, sqlite3, mysql, postgresql)', :default => 'sqlite3') {|adapter| TracMigrate.set_trac_adapter adapter}
     unless %w(sqlite sqlite3).include?(TracMigrate.trac_adapter)
       prompt('Trac database host', :default => 'localhost') {|host| TracMigrate.set_trac_db_host host}
@@ -929,7 +950,8 @@ namespace :redmine do
       prompt('Trac database password') {|password| TracMigrate.set_trac_db_password password}
     end
     prompt('Trac database encoding', :default => 'UTF-8') {|encoding| TracMigrate.encoding encoding}
-    prompt('Target project identifier', :default => 'hps') {|identifier| TracMigrate.target_project_identifier identifier}
+    prompt('Target project identifier', :default => ARGV[2]) {|identifier| TracMigrate.target_project_identifier identifier}
+    prompt('Target project name', :default => ARGV[3]) {|name| TracMigrate.target_project_name name}
     puts
     
     TracMigrate.migrate
