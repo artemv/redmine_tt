@@ -76,18 +76,19 @@ namespace :redmine do
           :"tt-web-site" => 180000, :rap => 190000}
      
         DEFAULT_STATUS = IssueStatus.default
-        new_status = IssueStatus.find_by_name('Pending')
+        pending_status = IssueStatus.find_by_name('Pending')
         implementation_status = IssueStatus.find_by_name('Implementation')
         resolved_status = IssueStatus.find_by_name('Resolved')
         feedback_status = IssueStatus.find_by_name('Discussion')
         closed_status = IssueStatus.find_by_name('Closed')
-        STATUS_MAPPING = {'new' => new_status,
+        STATUS_MAPPING = {'new' => pending_status,
                           'discussion' => feedback_status,
                           'settled' => implementation_status,
                           'implementation' => implementation_status,
-                          'pending' => new_status,
+                          'pending' => pending_status,
                           'done' => resolved_status,
-                          'closed' => closed_status
+                          'closed' => closed_status,
+                          'Accepted' => pending_status
                           }
 	                          
         priorities = Enumeration.get_values('IPRI')
