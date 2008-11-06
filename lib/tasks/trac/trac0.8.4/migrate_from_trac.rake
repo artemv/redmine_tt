@@ -70,7 +70,7 @@ namespace :redmine do
     module TracMigrate
         ID_SHIFTS = {:mla => 60000, :"city-and-hackney" => 70000, 
           :vrg => 80000, :mhmds => 90000, :hps => 100000, 
-          :"Soltex-core" => 110000, :"bml-maps" => 120000, 
+          :"soltex-core" => 110000, :"bml-maps" => 120000, 
           :"healey-baker" => 130000, :bitcut => 140000, :nduw => 150000, 
           :"ics-demo" => 160000, :"sve-web-site" => 170000, 
           :"tt-web-site" => 180000, :rap => 190000}
@@ -458,8 +458,12 @@ namespace :redmine do
         value = encode(value) if options[:encode]
         size = value.size
         limit = limit_for(model, field)
-        raise "Trac's string '#{value}' (#{size} symbols) doesn't fit into " + 
-          "Redmine's #{model}.#{field} (#{limit} max)." if limit && limit < size
+        if limit && limit < size
+          cut = value.first(limit)
+          puts "Trac's string '#{value}' (#{size} symbols) doesn't fit into " + 
+            "Redmine's #{model}.#{field} (#{limit} max). Cutting to '#{cut}'" 
+          value = cut
+        end
         
         value
       end
