@@ -68,7 +68,7 @@ namespace :redmine do
   task :migrate_from_trac_08_4 => :environment do
     
     module TracMigrate
-        ID_SHIFTS = {:mla => 60000}
+        ID_SHIFTS = {:mla => 60000, :"city-and-hackney" => 70000}
      
         DEFAULT_STATUS = IssueStatus.default
         new_status = IssueStatus.find_by_name('Pending')
@@ -97,7 +97,7 @@ namespace :redmine do
         TRACKER_FEATURE = Tracker.find_by_name('Feature')
         TRACKER_SUPPORT = Tracker.find_by_name('Support')
         DEFAULT_TRACKER = TRACKER_BUG
-        DEFAULT_TRAC_TYPE = 'Defect'
+        DEFAULT_TRAC_TYPE = 'Support'
         TRACKER_MAPPING = {'Defect' => TRACKER_BUG,
                            'New feature' => TRACKER_FEATURE,
                            'Support' => TRACKER_SUPPORT,
@@ -116,7 +116,8 @@ namespace :redmine do
         ADDITIONAL_RESOLUTIONS = ['fixed/done', 'invalid', 'cancelled', 
             'duplicate', 'works for me']
         
-        RESOLUTION_CORRECTIONS = {'canceled' => 'cancelled', 'fixed' => 'fixed/done'}
+        RESOLUTION_CORRECTIONS = {'canceled' => 'cancelled', 
+          'fixed' => 'fixed/done', 'wontfix' => 'cancelled'}
         
         REPRODUCED_AT_REMAP = {'Production' => 'Prod', 'UAT' => 'UAT',
           'Dev (TTA02)' => 'Moscow', 'Dev (Msc)' => 'Moscow', 
@@ -915,7 +916,7 @@ namespace :redmine do
     
     DEFAULT_PORTS = {'mysql' => 3306, 'postgresql' => 5432}
     
-    prompt('Trac directory', :default => '/opt/tracker/MLA') {|directory| TracMigrate.set_trac_directory directory.strip}
+    prompt('Trac directory', :default => '/opt/tracker/HT') {|directory| TracMigrate.set_trac_directory directory.strip}
     prompt('Trac database adapter (sqlite, sqlite3, mysql, postgresql)', :default => 'sqlite3') {|adapter| TracMigrate.set_trac_adapter adapter}
     unless %w(sqlite sqlite3).include?(TracMigrate.trac_adapter)
       prompt('Trac database host', :default => 'localhost') {|host| TracMigrate.set_trac_db_host host}
@@ -926,7 +927,7 @@ namespace :redmine do
       prompt('Trac database password') {|password| TracMigrate.set_trac_db_password password}
     end
     prompt('Trac database encoding', :default => 'UTF-8') {|encoding| TracMigrate.encoding encoding}
-    prompt('Target project identifier', :default => 'mla') {|identifier| TracMigrate.target_project_identifier identifier}
+    prompt('Target project identifier', :default => 'city-and-hackney') {|identifier| TracMigrate.target_project_identifier identifier}
     puts
     
     TracMigrate.migrate
