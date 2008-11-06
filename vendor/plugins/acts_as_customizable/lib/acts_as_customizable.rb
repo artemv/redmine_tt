@@ -29,7 +29,7 @@ module Redmine
           self.customizable_options = options
           has_many :custom_values, :as => :customized,
                                    :include => :custom_field,
-                                   :order => "#{CustomField.table_name}.position",
+                                   #:order => "#{CustomField.table_name}.position",
                                    :dependent => :delete_all
           before_validation_on_create { |customized| customized.custom_field_values }
           # Trigger validation only if custom values were changed
