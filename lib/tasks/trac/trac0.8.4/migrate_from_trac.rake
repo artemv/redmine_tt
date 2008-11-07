@@ -727,8 +727,12 @@ namespace :redmine do
         Issue.connection.reset_pk_sequence!(Issue.table_name) if Issue.connection.respond_to?('reset_pk_sequence!')
         puts
         
-        sample_id = @target_project.issues.first.id
-        @target_project.description = %Q{
+        sample_id = @target_project.issues.find(:all, :conditions => 
+            ('id > %d' % project_ids_shift)).first.id
+        
+        @target_project.description = '' if !@target_project.description
+        @target_project.description += "\r\n\r\n" if !@target_project.description.blank?
+        @target_project.description += %Q{
 *If you are looking for an old ticket created in Trac, add #{project_ids_shift} to the old ticket number.* 
 For example, the old ticket number #{sample_id - project_ids_shift} became ##{sample_id}.\r\n\r\n
 *To navigate to a ticket by number, enter the number into the Search field (at the top-right of the page) and press Enter key.*}
