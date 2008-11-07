@@ -71,7 +71,7 @@ namespace :redmine do
         ID_SHIFTS = {:mla => 60000, :"city-and-hackney" => 70000, 
           :vrg => 80000, :mhmds => 90000, :hps => 100000, 
           :"soltex-core" => 110000, :"bml-maps" => 120000, 
-          :"healey-baker" => 130000, :bitcut => 140000, :nduw => 150000, 
+          :"healey-baker" => 130000, :bicut => 140000, :nduw => 150000, 
           :"ics-demo" => 160000, :"sve" => 170000, 
           :"tt-web-site" => 180000, :rap => 190000}
      
@@ -462,9 +462,12 @@ namespace :redmine do
         size = value.size
         limit = limit_for(model, field)
         if limit && limit < size
-          cut = value.first(limit)
-          puts "Trac's string '#{value}' (#{size} symbols) doesn't fit into " + 
-            "Redmine's #{model}.#{field} (#{limit} max). Cutting to '#{cut}'" 
+          cut = value[0..limit-1]
+          msg = ''
+          msg += options[:context_hint] + ': ' if options[:context_hint]
+          msg += "Trac's string \n'#{value}'\n (#{size} symbols) doesn't fit into " + 
+            "Redmine's #{model}.#{field} (#{limit} max). Cutting to \n'#{cut}'" 
+          puts msg
           value = cut
         end
         
@@ -570,7 +573,7 @@ namespace :redmine do
         	print '.'
         	STDOUT.flush
         	i = Issue.new :project => @target_project, 
-                          :subject => get_string(ticket.summary, Issue, 'subject'),
+                          :subject => get_string(ticket.summary, Issue, 'subject', :context_hint => 'Ticket %d' % ticket.id),
                           :description => get_string(convert_wiki_text(encode(ticket.description)), Issue, :description, :encode => false),
                           :priority => PRIORITY_MAPPING[ticket.priority],
                           :created_on => ticket.time
