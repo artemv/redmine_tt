@@ -728,7 +728,7 @@ namespace :redmine do
         puts
         
         sample_id = @target_project.issues.find(:all, :conditions => 
-            ('id > %d' % project_ids_shift)).first.id
+            ('id > %d' % project_ids_shift), :limit => 3).last.id
         
         @target_project.description = '' if !@target_project.description
         @target_project.description += "\r\n\r\n" if !@target_project.description.blank?
