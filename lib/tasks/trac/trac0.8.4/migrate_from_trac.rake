@@ -72,7 +72,7 @@ namespace :redmine do
           :vrg => 80000, :mhmds => 90000, :hps => 100000, 
           :"soltex-core" => 110000, :"bml-maps" => 120000, 
           :"healey-baker" => 130000, :bitcut => 140000, :nduw => 150000, 
-          :"ics-demo" => 160000, :"sve-web-site" => 170000, 
+          :"ics-demo" => 160000, :"sve" => 170000, 
           :"tt-web-site" => 180000, :rap => 190000}
      
         DEFAULT_STATUS = IssueStatus.default
@@ -127,7 +127,7 @@ namespace :redmine do
           'fixed' => 'fixed/done', 'wontfix' => 'cancelled'}
         
         REPRODUCED_AT_REMAP = {'Production' => 'Prod', 'UAT' => 'UAT',
-          'Dev (TTA02)' => 'Moscow', 'Dev (Msc)' => 'Moscow', 
+          'Dev' => 'Dev', 'Dev (TTA02)' => 'Moscow', 'Dev (Msc)' => 'Moscow', 
           :unknown => 'Prod'}
                         
       class ::Time
@@ -472,13 +472,6 @@ namespace :redmine do
       end
 
       def self.migrate
-        sample_id = 8
-        @target_project.description = %Q{
-*If you are looking for an old ticket created in Trac, add #{project_ids_shift} to the old ticket number.* 
-For example, the old ticket number #{sample_id} became ##{project_ids_shift + sample_id}.\r\n\r\n
-*To navigate to a ticket by number, enter the number into the Search field (at the top-right of the page) and press Enter key.*}
-        @target_project.save!
-
         establish_connection
 
         # Quick database test
@@ -620,8 +613,8 @@ For example, the old ticket number #{sample_id} became ##{project_ids_shift + sa
                 
                 #version
                 if !ticket.version.blank? && @@reproduced_at_custom_field.trackers.include?(i.tracker)
-                    cv = i.custom_values.find_by_custom_field_id(@@reproduced_at_custom_field.id)                    
-            	    cv.value = maybe_remap(ticket.version, REPRODUCED_AT_REMAP, 
+                    cv = i.custom_values.find_by_custom_field_id(@@reproduced_at_custom_field.id)
+            	    cv.value = maybe_remap(ticket.version, REPRODUCED_AT_REMAP,
                       :force => true)
 
             	    res = cv.save
@@ -734,6 +727,13 @@ For example, the old ticket number #{sample_id} became ##{project_ids_shift + sa
         Issue.connection.reset_pk_sequence!(Issue.table_name) if Issue.connection.respond_to?('reset_pk_sequence!')
         puts
         
+        sample_id = @target_project.issues.first.id
+        @target_project.description = %Q{
+*If you are looking for an old ticket created in Trac, add #{project_ids_shift} to the old ticket number.* 
+For example, the old ticket number #{sample_id - project_ids_shift} became ##{sample_id}.\r\n\r\n
+*To navigate to a ticket by number, enter the number into the Search field (at the top-right of the page) and press Enter key.*}
+        @target_project.save!
+
         # Wiki      
         wiki_edit_count = TracWikiPage.find(:all).size
 =begin
