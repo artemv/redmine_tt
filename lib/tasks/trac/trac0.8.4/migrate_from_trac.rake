@@ -128,6 +128,7 @@ namespace :redmine do
         
         REPRODUCED_AT_REMAP = {'Production' => 'Prod', 'UAT' => 'UAT',
           'Dev' => 'Dev', 'Dev (TTA02)' => 'Moscow', 'Dev (Msc)' => 'Moscow', 
+          'Dev(Msc)' => 'Moscow', 'Preview (Msc)' => 'Moscow', 
           :unknown => 'Prod'}
                         
       class ::Time
