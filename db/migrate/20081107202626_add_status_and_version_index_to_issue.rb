@@ -1,4 +1,4 @@
-class AddStatusAndVersionIndexesToIssue < ActiveRecord::Migration
+class AddStatusAndVersionIndexToIssue < ActiveRecord::Migration
   def self.up
     add_index "issues", ["status_id", "fixed_version_id"], :name => "issues_status_id_and_fixed_version_id"
   end
