@@ -20,6 +20,7 @@ class UserPreference < ActiveRecord::Base
   serialize :others
   
   attr_protected :others
+  validates_presence_of :time_zone
   
   def initialize(attributes = nil)
     super
