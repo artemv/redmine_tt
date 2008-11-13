@@ -259,5 +259,6 @@ class ApplicationController < ActionController::Base
       msg += ' ' + l(:text_time_entry_distance_differ_from_hours, 
         diff[:distance], diff[:hours])
     end
+    msg
   end
 end
