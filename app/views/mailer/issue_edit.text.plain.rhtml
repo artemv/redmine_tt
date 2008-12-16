@@ -1,7 +1,7 @@
 <%= l(:text_issue_updated, "##{@issue.id}", @journal.user) %>
 
 <% for detail in @journal.details -%>
-<%= show_detail(detail, true) %>
+<%= show_detail(detail, :no_html => true, :url_options => @url_options) %>
 <% end -%>
 
 <%= @journal.notes if @journal.notes? %>

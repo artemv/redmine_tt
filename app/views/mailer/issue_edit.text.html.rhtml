@@ -2,7 +2,7 @@
 
 <ul>
 <% for detail in @journal.details %>
-    <li><%= show_detail(detail, true) %></li>
+    <li><%= show_detail(detail, :no_html => true, :url_options => @url_options) %></li>
 <% end %>
 </ul>
 

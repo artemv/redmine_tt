@@ -55,6 +55,15 @@ class MailerTest < Test::Unit::TestCase
       assert Mailer.deliver_issue_edit(journal)
     end
   end
+
+  def test_description_changed
+    journal = Journal.find(1)
+    Setting.default_language = 'en'
+    msg = Mailer.create_issue_edit(journal)
+    assert msg.body['<strong>Description</strong>'], "there should be Description Changed note"
+    assert !msg.body['<a href="/issues/diff'], "no relative link to Description diff is expected"
+    assert msg.body['<a href="%s://%s/issues/diff' % [Setting.protocol, Setting.host_name]], "absolute link to Description diff is expected"
+  end
   
   def test_document_added
     document = Document.find(1)

@@ -46,7 +46,9 @@ module IssuesHelper
     @sidebar_queries
   end
 
-  def show_detail(detail, no_html=false)
+  def show_detail(detail, options = {})
+    options.reverse_merge! :no_html => false, :url_options => {}
+    no_html = options[:no_html]
     case detail.property
     when 'attr'
       label = l(("field_" + detail.prop_key.to_s.gsub(/\_id$/, "")).to_sym)   
@@ -76,7 +78,10 @@ module IssuesHelper
         v = Version.find_by_id(detail.value) and value = v.name if detail.value
         v = Version.find_by_id(detail.old_value) and old_value = v.name if detail.old_value
       when 'description'
-        return content_tag('strong', 'Description') + ' ' + link_to('changed', :controller => 'issues', :action => 'diff', :id => detail.id)
+        return content_tag('strong', 'Description') + ' ' +
+          link_to('changed', url_for(options[:url_options].
+              merge(:controller => 'issues', :action => 'diff', :id => detail.id)
+          ))
 
       when 'estimated_hours'
         value = "%0.02f" % detail.value.to_f unless detail.value.blank?

@@ -48,7 +48,8 @@ class Mailer < ActionMailer::Base
     subject s
     body :issue => issue,
          :journal => journal,
-         :issue_url => url_for(:controller => 'issues', :action => 'show', :id => issue)
+         :issue_url => url_for(:controller => 'issues', :action => 'show', :id => issue),
+         :url_options => default_url_options
   end
   
   def reminder(user, issues, days)
