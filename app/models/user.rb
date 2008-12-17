@@ -140,7 +140,8 @@ class User < ActiveRecord::Base
   end
   
   def pref
-    self.preference ||= UserPreference.new(:user => self)
+    self.preference ||= UserPreference.new(:user => self,
+      :time_zone => Time.zone.name)
   end
   
   def time_zone
