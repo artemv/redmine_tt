@@ -87,8 +87,8 @@ class Query < ActiveRecord::Base
                                  :list_status => [ "o", "c", "=", "!", "*", "done", "undone" ],
                                  :list_optional => [ "=", "!", "!*", "*" ],
                                  :list_subprojects => [ "*", "!*", "=" ],
-                                 :date => [ "<t+", ">t+", "t+", "t", "w", ">t-", "<t-", "t-", "<t<" ],
-                                 :date_past => [ ">t-", "<t-", "t-", "t", "w", "<t<" ],
+                                 :date => [ "<t+", ">t+", "t+", "t", "w", ">t-", "<t-", "t-", "<t<", "!*", "*" ],
+                                 :date_past => [ ">t-", "<t-", "t-", "t", "w", "<t<", "!*", "*" ],
                                  :string => [ "=", "~", "!", "!~", "!*", "*"],
                                  :text => [  "~", "!~" ],
                                  :integer => [ "=", ">=", "<=", "!*", "*" ] }
