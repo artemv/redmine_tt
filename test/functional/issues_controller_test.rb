@@ -120,8 +120,8 @@ class IssuesControllerTest < Test::Unit::TestCase
       :fields => ["created_on"],
       :operators => {"created_on" => "<t<"},
       :values => {"created_on" => [""]},
-      :from_values => {"created_on" => [options[:from]]},
-      :to_values => {"created_on" => [options[:to]]}
+      :from_values => {"created_on" => options[:from]},
+      :to_values => {"created_on" => options[:to]}
     issues = assigns(:issues)
     tester.call(issues)
   end
@@ -139,6 +139,16 @@ class IssuesControllerTest < Test::Unit::TestCase
   def test_date_range_filer_with_right_edge_issue_date
     test_date_range_filer_with('2006-07-19 23:59', :from => '2006-07-19',
       :to => '2006-07-19')
+  end
+
+  def test_date_range_filer_with_open_left
+    test_date_range_filer_with('2006-07-19 17:00', :from => nil,
+      :to => '2006-07-19')
+  end
+
+  def test_date_range_filer_with_open_right
+    test_date_range_filer_with('2006-07-19 17:00', :from => '2006-07-19',
+      :to => nil)
   end
 
   def test_index_csv_with_project

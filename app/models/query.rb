@@ -134,7 +134,13 @@ class Query < ActiveRecord::Base
           # filter requires one or more values
           (filters[field][:values] and !filters[field][:values].first.blank?) or
           # filter doesn't require any value
-          ["o", "c", "done", "undone", "!*", "*", "t", "w"].include? operator_for(field)
+          ["o", "c", "done", "undone", "!*", "*", "t", "w", "<t<"].include? operator_for(field)
+
+      errors.add label_for(field), :activerecord_error_blank if
+          ["<t<"].include?(operator_for(field)) and
+          # filter requires that at least one value need to be set
+          (!filters[field][:values] or (filters[field][:values][0].blank? and filters[field][:values][1].blank?))
+
     end if filters
   end
   
@@ -368,7 +374,13 @@ class Query < ActiveRecord::Base
       when "t"
         sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today), date_right_bound(Date.today)]
       when "<t<"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(v[0].to_s), date_right_bound(v[1].to_s)]
+        if v[0].blank?
+          sql = sql + "#{db_table}.#{db_field} <= '%s'" % date_right_bound(v[1])
+        elsif v[1].blank?
+          sql = sql + "#{db_table}.#{db_field} >= '%s'" % date_left_bound(v[0])
+        else
+          sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(v[0]), date_right_bound(v[1])]
+        end
       when "w"
         from = l(:general_first_day_of_week) == '7' ?
           # week starts on sunday
