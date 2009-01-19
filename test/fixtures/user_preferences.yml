@@ -15,7 +15,7 @@ user_preferences_001:
   id: 1
   user_id: 1
   hide_mail: true
-  time_zone: Samoa
+  time_zone: Berlin
 user_preferences_002: 
   others: |+
     --- {}

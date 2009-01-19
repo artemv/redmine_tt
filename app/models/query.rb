@@ -77,6 +77,7 @@ class Query < ActiveRecord::Base
                   ">t-" => :label_less_than_ago,
                   "<t-" => :label_more_than_ago,
                   "t-"  => :label_ago,
+                  "<t<" => :label_in_date_range,
                   "~"   => :label_contains,
                   "!~"  => :label_not_contains }
 
@@ -86,8 +87,8 @@ class Query < ActiveRecord::Base
                                  :list_status => [ "o", "c", "=", "!", "*", "done", "undone" ],
                                  :list_optional => [ "=", "!", "!*", "*" ],
                                  :list_subprojects => [ "*", "!*", "=" ],
-                                 :date => [ "<t+", ">t+", "t+", "t", "w", ">t-", "<t-", "t-" ],
-                                 :date_past => [ ">t-", "<t-", "t-", "t", "w" ],
+                                 :date => [ "<t+", ">t+", "t+", "t", "w", ">t-", "<t-", "t-", "<t<" ],
+                                 :date_past => [ ">t-", "<t-", "t-", "t", "w", "<t<" ],
                                  :string => [ "=", "~", "!", "!~", "!*", "*"],
                                  :text => [  "~", "!~" ],
                                  :integer => [ "=", ">=", "<=", "!*", "*" ] }
@@ -111,6 +112,10 @@ class Query < ActiveRecord::Base
     QueryColumn.new(:created_on, :sortable => "#{Issue.table_name}.created_on", :default_order => 'desc'),
   ]
   cattr_reader :available_columns
+
+  def range_operator?(operator)
+    operator == '<t<'
+  end
   
   def initialize(attributes = nil)
     super attributes
@@ -127,7 +132,7 @@ class Query < ActiveRecord::Base
     filters.each_key do |field|
       errors.add label_for(field), :activerecord_error_blank unless 
           # filter requires one or more values
-          (values_for(field) and !values_for(field).first.blank?) or 
+          (filters[field][:values] and !filters[field][:values].first.blank?) or
           # filter doesn't require any value
           ["o", "c", "done", "undone", "!*", "*", "t", "w"].include? operator_for(field)
     end if filters
@@ -217,9 +222,17 @@ class Query < ActiveRecord::Base
   end
   
   def values_for(field)
-    has_filter?(field) ? filters[field][:values] : nil
+    !range_operator?(operator_for(field)) && has_filter?(field) ? filters[field][:values] : nil
+  end
+
+  def from_value(field)
+    range_operator?(operator_for(field)) && has_filter?(field) ? filters[field][:values][0] : nil
   end
   
+  def to_value(field)
+    range_operator?(operator_for(field)) && has_filter?(field) ? filters[field][:values][1] : nil
+  end
+
   def label_for(field)
     label = available_filters[field][:name] if available_filters.has_key?(field)
     label ||= field.gsub(/\_id$/, "")
@@ -286,7 +299,7 @@ class Query < ActiveRecord::Base
     filters_clauses = []
     filters.each_key do |field|
       next if field == "subproject_id"
-      v = values_for(field).clone
+      v = filters[field][:values].clone
       next unless v and !v.empty?
             
       sql = ''
@@ -346,6 +359,9 @@ class Query < ActiveRecord::Base
         sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date((Date.today + v.first.to_i).to_time), connection.quoted_date((Date.today + v.first.to_i + 1).to_time)]
       when "t"
         sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(Date.today.to_time), connection.quoted_date((Date.today+1).to_time)]
+      when "<t<"
+        #ok this is an island of timezone-awareness in filters
+        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(v[0].to_s.to_time - Time.zone.utc_offset), connection.quoted_date(v[1].to_s.to_time + 1.day - 1.second - Time.zone.utc_offset)]
       when "w"
         from = l(:general_first_day_of_week) == '7' ?
           # week starts on sunday

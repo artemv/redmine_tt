@@ -19,7 +19,7 @@ require File.dirname(__FILE__) + '/../test_helper'
 require 'issues_controller'
 
 # Re-raise errors caught by the controller.
-class IssuesController; def rescue_action(e) raise e end; end
+class IssuesController;  def rescue_action(e) raise e; end; end
 
 class IssuesControllerTest < Test::Unit::TestCase
   fixtures :projects,
@@ -46,7 +46,7 @@ class IssuesControllerTest < Test::Unit::TestCase
     @controller = IssuesController.new
     @request    = ActionController::TestRequest.new
     @response   = ActionController::TestResponse.new
-    User.current = nil
+    @current_user_timezone = Time.zone.name
   end
 
   def test_index
@@ -101,7 +101,46 @@ class IssuesControllerTest < Test::Unit::TestCase
     assert_template 'index.rhtml'
     assert_not_nil assigns(:issues)
   end
+
+  def test_date_range_filer_with(issue_date, options = {})
+    options.reverse_merge! :issue_date_timezone => @current_user_timezone
+    issue = Issue.find(2)
+    issue.created_on = '%s +%02d' % [issue_date,
+      TimeZone[options[:issue_date_timezone]].utc_offset/3600]
+    if block_given?
+      tester = lambda {|issues| yield(issues)}
+    else
+      tester = lambda do |issues|
+        assert issues.find {|i| i.id == 2}, 'issue 2 must get into resultest'
+      end
+    end
+    issue.save!
+    get :index, :project_id => 1, 
+      :set_filter => 1,
+      :fields => ["created_on"],
+      :operators => {"created_on" => "<t<"},
+      :values => {"created_on" => [""]},
+      :from_values => {"created_on" => [options[:from]]},
+      :to_values => {"created_on" => [options[:to]]}
+    issues = assigns(:issues)
+    tester.call(issues)
+  end
   
+  def test_date_range_filer_with_middle_issue_date
+    test_date_range_filer_with('2006-07-19 17:00', :from => '2006-07-19',
+      :to => '2006-07-19')
+  end
+  
+  def test_date_range_filer_with_left_edge_issue_date
+    test_date_range_filer_with('2006-07-19 00:00', :from => '2006-07-19',
+      :to => '2006-07-19')
+  end
+
+  def test_date_range_filer_with_right_edge_issue_date
+    test_date_range_filer_with('2006-07-19 23:59', :from => '2006-07-19',
+      :to => '2006-07-19')
+  end
+
   def test_index_csv_with_project
     get :index, :format => 'csv'
     assert_response :success

@@ -25,6 +25,7 @@ function toggle_filter(field) {
     } else {
         Element.hide("operators_" + field);
         Element.hide("div_values_" + field);
+        Element.hide("div_date_range_" + field);
   }
 }
 
@@ -40,9 +41,15 @@ function toggle_operator(field) {
     case "done":
     case "c":
       Element.hide("div_values_" + field);
+      Element.hide("div_date_range_" + field);
+      break;
+    case "<t<":
+      Element.hide("div_values_" + field);
+      Element.show("div_date_range_" + field);
       break;
     default:
       Element.show("div_values_" + field);
+      Element.hide("div_date_range_" + field);
       break;
   }
 }
@@ -89,6 +96,13 @@ function toggle_multi_select(field) {
         <%= text_field_tag "values[#{field}][]", query.values_for(field), :id => "values_#{field}", :size => 3, :class => "select-small" %>
     <% end %>
     </div>
+    <div id="div_date_range_<%= field %>" style="display:none;">
+        <%= '&nbsp;'*3 + l(:label_date_from).downcase %>
+        <%= text_field_tag "from_values[#{field}]", query.from_value(field), :id => "from_value_#{field}", :size => 10 %> <%= calendar_for("from_value_#{field}") %>
+        <%= '&nbsp;'*3 + l(:label_date_to).downcase %>
+        <%= text_field_tag "to_values[#{field}]", query.to_value(field), :id => "to_value_#{field}", :size => 10 %> <%= calendar_for("to_value_#{field}") %>
+    </div>
+
     <script type="text/javascript">toggle_filter('<%= field %>');</script>
     </td>
     </tr>
