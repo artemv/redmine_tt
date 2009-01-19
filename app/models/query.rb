@@ -270,6 +270,14 @@ class Query < ActiveRecord::Base
     column_names.nil? || column_names.empty?
   end
 
+  def date_left_bound(value)
+    connection.quoted_date(value.to_time - Time.zone.utc_offset)
+  end
+
+  def date_right_bound(value)
+    connection.quoted_date(value.to_time + 1.day - 1.second - Time.zone.utc_offset)
+  end
+  
   def statement
     # project/subprojects clause
     project_clauses = []
@@ -346,22 +354,21 @@ class Query < ActiveRecord::Base
       when "done"
         sql = sql + "#{IssueStatus.table_name}.is_closed = #{connection.quoted_true} OR #{IssueStatus.table_name}.is_development_complete=#{connection.quoted_true}" if field == "status_id"
       when ">t-"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date((Date.today - v.first.to_i).to_time), connection.quoted_date((Date.today + 1).to_time)]
+        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today - v.first.to_i), date_right_bound(Date.today)]
       when "<t-"
-        sql = sql + "#{db_table}.#{db_field} <= '%s'" % connection.quoted_date((Date.today - v.first.to_i).to_time)
+        sql = sql + "#{db_table}.#{db_field} <= '%s'" % date_right_bound(Date.today - v.first.to_i - 1)
       when "t-"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date((Date.today - v.first.to_i).to_time), connection.quoted_date((Date.today - v.first.to_i + 1).to_time)]
+        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today - v.first.to_i), date_right_bound(Date.today - v.first.to_i)]
       when ">t+"
-        sql = sql + "#{db_table}.#{db_field} >= '%s'" % connection.quoted_date((Date.today + v.first.to_i).to_time)
+        sql = sql + "#{db_table}.#{db_field} >= '%s'" % date_left_bound(Date.today + v.first.to_i)
       when "<t+"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(Date.today.to_time), connection.quoted_date((Date.today + v.first.to_i + 1).to_time)]
+        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today), date_right_bound(Date.today + v.first.to_i)]
       when "t+"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date((Date.today + v.first.to_i).to_time), connection.quoted_date((Date.today + v.first.to_i + 1).to_time)]
+        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today + v.first.to_i), date_right_bound(Date.today + v.first.to_i)]
       when "t"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(Date.today.to_time), connection.quoted_date((Date.today+1).to_time)]
+        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today), date_right_bound(Date.today)]
       when "<t<"
-        #ok this is an island of timezone-awareness in filters
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(v[0].to_s.to_time - Time.zone.utc_offset), connection.quoted_date(v[1].to_s.to_time + 1.day - 1.second - Time.zone.utc_offset)]
+        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(v[0].to_s), date_right_bound(v[1].to_s)]
       when "w"
         from = l(:general_first_day_of_week) == '7' ?
           # week starts on sunday
