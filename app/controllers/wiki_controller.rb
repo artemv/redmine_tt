@@ -73,7 +73,7 @@ class WikiController < ApplicationController
     else
       if !@page.new_record? && @content.text == params[:content][:text]
         # don't save if text wasn't changed
-        redirect_to :action => 'index', :id => @project, :page => @page.title
+        redirect_to page_link
         return
       end
       #@content.text = params[:content][:text]
@@ -82,7 +82,7 @@ class WikiController < ApplicationController
       @content.author = User.current
       # if page is new @page.save will also save content, but not if page isn't a new record
       if (@page.new_record? ? @page.save : @content.save)
-        redirect_to :action => 'index', :id => @project, :page => @page.title
+        redirect_to page_link
       end
     end
   rescue ActiveRecord::StaleObjectError
@@ -98,13 +98,13 @@ class WikiController < ApplicationController
     @original_title = @page.pretty_title
     if request.post? && @page.update_attributes(params[:wiki_page])
       flash[:notice] = l(:notice_successful_update)
-      redirect_to :action => 'index', :id => @project, :page => @page.title
+      redirect_to page_link
     end
   end
   
   def protect
     @page.update_attribute :protected, params[:protected]
-    redirect_to :action => 'index', :id => @project, :page => @page.title
+    redirect_to page_link
   end
 
   # show page history
@@ -177,12 +177,26 @@ class WikiController < ApplicationController
 
   def add_attachment
     return render_403 unless editable?
-    attach_files(@page, params[:attachments])
+    attachments = attach_files(@page, params[:attachments])
+    if !attachments.empty? &&
+        Setting.notified_events.include?(NotificationKeys::WIKI_EDIT)
+      
+      Mailer.deliver_attachments_added(attachments)
+    end
     redirect_to :action => 'index', :page => @page.title
   end
 
+
+  def self.page_link(page)
+    {:action => 'index', :id => page.project, :page => page.title}
+  end
+
 private
-  
+
+  def page_link()
+    self.class.page_link(@page)
+  end
+
   def find_wiki
     @project = Project.find(params[:id])
     @wiki = @project.wiki

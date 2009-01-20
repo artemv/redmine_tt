@@ -34,4 +34,8 @@ class Document < ActiveRecord::Base
       self.category ||= Enumeration.default('DCAT')
     end
   end
+
+  def notification_key
+    NotificationKeys::DOCUMENT_ADDED
+  end
 end

@@ -258,6 +258,7 @@ label_associated_revisions: Связанные редакции
 label_attachment: Файл
 label_attachment_delete: Удалить файл
 label_attachment_new: Новый файл
+label_attachment_deleted: Файл удалён
 label_attachment_plural: Файлы
 label_attribute: Атрибут
 label_attribute_plural: атрибуты

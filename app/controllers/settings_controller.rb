@@ -24,7 +24,7 @@ class SettingsController < ApplicationController
   end
 
   def edit
-    @notifiables = %w(issue_added issue_updated news_added document_added file_added message_posted)
+    @notifiables = NotificationKeys::all
     if request.post? && params[:settings] && params[:settings].is_a?(Hash)
       settings = (params[:settings] || {}).dup.symbolize_keys
       settings.each do |name, value|

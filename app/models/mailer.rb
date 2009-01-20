@@ -75,26 +75,16 @@ class Mailer < ActionMailer::Base
   end
 
   def attachments_added(attachments)
-    container = attachments.first.container
-    added_to = ''
-    added_to_url = ''
-    case container.class.name
-    when 'Project'
-      added_to_url = url_for(:controller => 'projects', :action => 'list_files', :id => container)
-      added_to = "#{l(:label_project)}: #{container}"
-    when 'Version'
-      added_to_url = url_for(:controller => 'projects', :action => 'list_files', :id => container.project_id)
-      added_to = "#{l(:label_version)}: #{container.name}"
-    when 'Document'
-      added_to_url = url_for(:controller => 'documents', :action => 'show', :id => container.id)
-      added_to = "#{l(:label_document)}: #{container.title}"
+    attachments_action(attachments) do |container|
+      subject "[#{container.project.name}] #{l(:label_attachment_new)}"
     end
-    redmine_headers 'Project' => container.project.identifier
-    recipients container.project.recipients
-    subject "[#{container.project.name}] #{l(:label_attachment_new)}"
-    body :attachments => attachments,
-         :added_to => added_to,
-         :added_to_url => added_to_url
+  end
+
+  def attachments_removed(attachments)
+    attachments_action(attachments) do |container|
+      subject "[%s] %s" % [container.project.name, l(:label_attachment_deleted)]
+      self.template = :attachments_added
+    end
   end
 
   def news_added(news)
@@ -286,6 +276,34 @@ class Mailer < ActionMailer::Base
     @references_objects ||= []
     @references_objects << object
   end
+
+  def attachments_action(attachments)
+    container = attachments.first.container
+    added_to = ''
+    added_to_url = ''
+    case container.class.name
+    when 'Project'
+      added_to_url = url_for(:controller => 'projects', :action => 'list_files', :id => container)
+      added_to = "#{l(:label_project)}: #{container}"
+    when 'Version'
+      added_to_url = url_for(:controller => 'projects', :action => 'list_files', :id => container.project_id)
+      added_to = "#{l(:label_version)}: #{container.name}"
+    when 'Document'
+      added_to_url = url_for(:controller => 'documents', :action => 'show', :id => container.id)
+      added_to = "#{l(:label_document)}: #{container.title}"
+    when 'WikiPage'
+      added_to = "#{l(:label_wiki)}: #{container.title}"
+      added_to_url = url_for({:controller => 'wiki'}.
+          merge(WikiController.page_link(container)))
+    end
+    redmine_headers 'Project' => container.project.identifier
+    recipients container.project.recipients
+    yield(container)
+    body :attachments => attachments,
+         :added_to => added_to,
+         :added_to_url => added_to_url
+  end
+
 end
 
 # Patch TMail so that message_id is not overwritten

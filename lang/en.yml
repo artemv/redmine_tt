@@ -382,6 +382,7 @@ label_history: History
 label_attachment: File
 label_attachment_new: New file
 label_attachment_delete: Delete file
+label_attachment_deleted: File was deleted
 label_attachment_plural: Files
 label_file_added: File added
 label_report: Report

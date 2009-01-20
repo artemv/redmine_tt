@@ -25,6 +25,6 @@ and remove the number it had in patch (to give a way for migration with the same
 
     delete from schema_migrations where version in ('995')
 
-This version is based on r1783 of http://redmine.rubyforge.org/svn/trunk.
+This version is based on r2282 of http://redmine.rubyforge.org/svn/trunk (so it's Redmine 0.8.1+).
 
 Contributed by Texuna Technologies.

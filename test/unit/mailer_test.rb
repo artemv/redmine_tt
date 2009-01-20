@@ -168,15 +168,24 @@ class MailerTest < Test::Unit::TestCase
       assert Mailer.deliver_document_added(document)
     end
   end
-  
-  def test_attachments_added
-    attachements = [ Attachment.find_by_container_type('Document') ]
+
+  def test_attachments_action(type, action)
+    attachments = [ Attachment.find_by_container_type(type) ]
+    assert !attachments.empty?
     GLoc.valid_languages.each do |lang|
       Setting.default_language = lang.to_s
-      assert Mailer.deliver_attachments_added(attachements)
+      assert Mailer.send("deliver_attachments_%s" % action, attachments)
     end
   end
+
+  def test_attachments_added
+    test_attachments_action('Document', :added)
+  end
   
+  def test_attachments_removed
+    test_attachments_action('WikiPage', :removed)
+  end
+
   def test_news_added
     news = News.find(:first)
     GLoc.valid_languages.each do |lang|

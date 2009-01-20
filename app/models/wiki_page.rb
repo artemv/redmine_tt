@@ -126,6 +126,10 @@ class WikiPage < ActiveRecord::Base
     self.parent = parent_page
   end
   
+  def notification_key
+    NotificationKeys::WIKI_EDIT
+  end
+
   protected
   
   def validate

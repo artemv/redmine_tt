@@ -47,10 +47,20 @@ class AttachmentsController < ApplicationController
     options.merge!(:type => @attachment.content_type) if @attachment.content_type
     send_file @attachment.diskfile, options
   end
-  
+
+  def to_notify?
+    notification_key = @attachment.container.notification_key if @attachment.container.respond_to?(:notification_key)
+    notification_key ||= NotificationKeys::FILE_ADDED
+    Setting.notified_events.include?(notification_key)
+  end
+
   def destroy
     # Make sure association callbacks are called
     @attachment.container.attachments.delete(@attachment)
+
+    if to_notify?
+      Mailer.deliver_attachments_removed([@attachment])
+    end
     redirect_to :back
   rescue ::ActionController::RedirectBackError
     redirect_to :controller => 'projects', :action => 'show', :id => @project
