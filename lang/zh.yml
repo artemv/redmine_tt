@@ -77,6 +77,7 @@ notice_failed_to_save_issues: "%d 个问题保存失败（共选择 %d 个问题
 notice_no_issue_selected: "未选择任何问题！请选择您要编辑的问题。"
 notice_account_pending: "您的帐号已被成功创建，正在等待管理员的审核。"
 notice_default_data_loaded: 成功载入默认设置。
+notice_unable_delete_version: 无法删除版本
 
 error_can_t_load_default_data: "无法载入默认设置：%s"
 error_scm_not_found: "版本库中不存在该条目和（或）其修订版本。"
@@ -194,6 +195,7 @@ setting_attachment_max_size: 附件大小限制
 setting_issues_export_limit: 问题输出条目的限制
 setting_mail_from: 邮件发件人地址
 setting_bcc_recipients: 使用密件抄送 (bcc)
+setting_plain_text_mail: 纯文本（无HTML）
 setting_host_name: 主机名称
 setting_text_formatting: 文本格式
 setting_wiki_compression: 压缩Wiki历史文档
@@ -217,8 +219,60 @@ setting_user_format: 用户显示格式
 setting_activity_days_default: 在项目活动中显示的天数
 setting_display_subprojects_issues: 在项目页面上默认显示子项目的问题
 setting_enabled_scm: 启用 SCM
-setting_mail_handler_api_enabled: 启用用于接收邮件的Web Service
+setting_mail_handler_api_enabled: 启用用于接收邮件的服务
 setting_mail_handler_api_key: API key
+setting_sequential_project_identifiers: 顺序产生项目标识
+setting_gravatar_enabled: 使用Gravatar用户头像
+setting_diff_max_lines_displayed: 查看差别页面上显示的最大行数
+
+permission_edit_project: 编辑项目
+permission_select_project_modules: 选择项目模块
+permission_manage_members: 管理成员
+permission_manage_versions: 管理版本
+permission_manage_categories: 管理问题类别
+permission_add_issues: 新建问题
+permission_edit_issues: 更新问题
+permission_manage_issue_relations: 管理问题关联
+permission_add_issue_notes: 添加说明
+permission_edit_issue_notes: 编辑说明
+permission_edit_own_issue_notes: 编辑自己的说明
+permission_move_issues: 移动问题
+permission_delete_issues: 删除问题
+permission_manage_public_queries: 管理公开的查询
+permission_save_queries: 保存查询
+permission_view_gantt: 查看甘特图
+permission_view_calendar: 查看日历
+permission_view_issue_watchers: 查看跟踪者列表
+permission_add_issue_watchers: 添加跟踪者
+permission_log_time: 登记工时
+permission_view_time_entries: 查看耗时
+permission_edit_time_entries: 编辑耗时
+permission_edit_own_time_entries: 编辑自己的耗时
+permission_manage_news: 管理新闻
+permission_comment_news: 为新闻添加评论
+permission_manage_documents: 管理文档
+permission_view_documents: 查看文档
+permission_manage_files: 管理文件
+permission_view_files: 查看文件
+permission_manage_wiki: 管理Wiki
+permission_rename_wiki_pages: 重命名Wiki页面
+permission_delete_wiki_pages: 删除Wiki页面
+permission_view_wiki_pages: 查看Wiki
+permission_view_wiki_edits: 查看Wiki历史记录
+permission_edit_wiki_pages: 编辑Wiki页面
+permission_delete_wiki_pages_attachments: 删除附件
+permission_protect_wiki_pages: 保护Wiki页面
+permission_manage_repository: 管理版本库
+permission_browse_repository: 浏览版本库
+permission_view_changesets: 查看变更
+permission_commit_access: 访问提交信息
+permission_manage_boards: 管理讨论区
+permission_view_messages: 查看帖子
+permission_add_messages: 发表帖子
+permission_edit_messages: 编辑帖子
+permission_edit_own_messages: 编辑自己的帖子
+permission_delete_messages: 删除帖子
+permission_delete_own_messages: 删除自己的帖子
 
 project_module_issue_tracking: 问题跟踪
 project_module_time_tracking: 时间跟踪
@@ -291,6 +345,7 @@ label_last_updates_plural: %d 最后更新
 label_registered_on: 注册于
 label_activity: 活动
 label_overall_activity: 全部活动
+label_user_activity: "%s 的活动"
 label_new: 新建
 label_logged_as: 登录为
 label_environment: 环境
@@ -403,6 +458,8 @@ label_revision_plural: 修订
 label_associated_revisions: 相关修订版本
 label_added: 已添加
 label_modified: 已修改
+label_copied: 已复制
+label_renamed: 已重命名
 label_deleted: 已删除
 label_latest_revision: 最近的修订版本
 label_latest_revision_plural: 最近的修订版本
@@ -414,7 +471,7 @@ label_sort_higher: 上移
 label_sort_lower: 下移
 label_sort_lowest: 置底
 label_roadmap: 路线图
-label_roadmap_due_in: 截止日期到 
+label_roadmap_due_in: 截止日期到  %s
 label_roadmap_overdue: %s 延期
 label_roadmap_no_issues: 该版本没有问题
 label_search: 搜索
@@ -488,7 +545,8 @@ label_send_test_email: 发送测试邮件
 label_feeds_access_key_created_on: RSS 存取键是在 %s 之前建立的
 label_module_plural: 模块
 label_added_time_by: 由 %s 在 %s 之前添加
-label_updated_time:  更新于 %s 前
+label_updated_time:  更新于 %s 之前
+label_updated_time_by: 由 %s 更新于 %s 之前
 label_jump_to_a_project: 选择一个项目...
 label_file_plural: 文件
 label_changeset_plural: 变更
@@ -523,6 +581,7 @@ label_planning: 计划
 label_incoming_emails: 接收邮件
 label_generate_key: 生成一个key
 label_issue_watchers: 跟踪者
+label_example: 示例
 
 button_login: 登录
 button_submit: 提交
@@ -561,6 +620,7 @@ button_copy: 复制
 button_annotate: 追溯
 button_update: 更新
 button_configure: 配置
+button_quote: 引用
 
 status_active: 活动的
 status_registered: 已注册
@@ -610,6 +670,8 @@ text_user_wrote: '%s 写到：'
 text_enumeration_category_reassign_to: '将它们关联到新的枚举值：'
 text_enumeration_destroy_question: '%d 个对象被关联到了这个枚举值。'
 text_email_delivery_not_configured: "邮件参数尚未配置，因此邮件通知功能已被禁用。\n请在config/email.yml中配置您的SMTP服务器信息并重新启动以使其生效。"
+text_repository_usernames_mapping: "选择或更新与版本库中的用户名对应的Redmine用户。\n版本库中与Redmine中的同名用户将被自动对应。"
+text_diff_truncated: '... 差别内容超过了可显示的最大行数并已被截断'
 
 default_role_manager: 管理人员
 default_role_developper: 开发人员
@@ -636,27 +698,9 @@ default_activity_development: 开发
 enumeration_issue_priorities: 问题优先级
 enumeration_doc_categories: 文档类别
 enumeration_activities: 活动（时间跟踪）
-
-text_email_delivery_not_configured: "Email delivery is not configured, and notifications are disabled.\nConfigure your SMTP server in config/email.yml and restart the application to enable them."
-field_start_time: Start Time
-field_end_time: End Time
-text_in_progress: in progress
-activerecord_error_field_must_be_set_if_other_is_not: must be set if %s is not
-text_clear_to_recalculate_time_by_range: Clear to recalculate by start/end time
-text_and: and
-text_time_entry_intersecting_notice: Notice that this timelog entry (%s) intersects with %s.
-text_time_entry_intersecting_notice_entry: entry
-text_time_entry_intersecting_notice_entry_plural: entries
-button_now: Now
-label_remaining_time: Remaining time
-label_current_total_time: Total
-label_estimated_time_short: Est.
-label_spent_time_short: Spent
-label_remaining_time_short: Rem.
-label_issues_count: Count
-label_time: Time
-text_hours_short: h
-text_not_assigned: Not assigned
-
-button_quote: Quote
-setting_sequential_project_identifiers: Generate sequential project identifiers
+text_plugin_assets_writable: Plugin assets directory writable
+warning_attachments_not_saved: "%d file(s) could not be saved."
+button_create_and_continue: Create and continue
+text_custom_field_possible_values_info: 'One line for each value'
+label_display: Display
+field_editable: Editable

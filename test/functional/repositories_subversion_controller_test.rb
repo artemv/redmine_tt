@@ -22,7 +22,9 @@ require 'repositories_controller'
 class RepositoriesController; def rescue_action(e) raise e end; end
 
 class RepositoriesSubversionControllerTest < Test::Unit::TestCase
-  fixtures :projects, :users, :roles, :members, :repositories, :issues, :issue_statuses, :changesets, :changes, :issue_categories, :enumerations, :custom_fields, :custom_values, :trackers
+  fixtures :projects, :users, :roles, :members, :enabled_modules,
+           :repositories, :issues, :issue_statuses, :changesets, :changes,
+           :issue_categories, :enumerations, :custom_fields, :custom_values, :trackers
 
   # No '..' in the repository path for svn
   REPOSITORY_PATH = RAILS_ROOT.gsub(%r{config\/\.\.}, '') + '/tmp/test/subversion_repository'
@@ -76,13 +78,15 @@ class RepositoriesSubversionControllerTest < Test::Unit::TestCase
       get :changes, :id => 1, :path => ['subversion_test', 'folder', 'helloworld.rb' ]
       assert_response :success
       assert_template 'changes'
-      # svn properties
-      assert_not_nil assigns(:properties)
-      assert_equal 'native', assigns(:properties)['svn:eol-style']
-      assert_tag :ul,
-                 :child => { :tag => 'li',
-                             :child => { :tag => 'b', :content => 'svn:eol-style' },
-                             :child => { :tag => 'span', :content => 'native' } }
+      # svn properties displayed with svn >= 1.5 only
+      if Redmine::Scm::Adapters::SubversionAdapter.client_version_above?([1, 5, 0])
+        assert_not_nil assigns(:properties)
+        assert_equal 'native', assigns(:properties)['svn:eol-style']
+        assert_tag :ul,
+                   :child => { :tag => 'li',
+                               :child => { :tag => 'b', :content => 'svn:eol-style' },
+                               :child => { :tag => 'span', :content => 'native' } }
+      end
     end
       
     def test_entry
@@ -123,16 +127,18 @@ class RepositoriesSubversionControllerTest < Test::Unit::TestCase
       get :revision, :id => 1, :rev => 2
       assert_response :success
       assert_template 'revision'
-      assert_tag :tag => 'tr',
-                 :child => { :tag => 'td', 
+      assert_tag :tag => 'ul',
+                 :child => { :tag => 'li',
                              # link to the entry at rev 2
-                             :child => { :tag => 'a', :attributes => {:href => 'repositories/entry/ecookbook/test/some/path/in/the/repo?rev=2'},
-                                                      :content => %r{/test/some/path/in/the/repo} }
-                           },
-                 :child => { :tag => 'td', 
-                             # link to partial diff
-                             :child => { :tag => 'a', :attributes => { :href => '/repositories/diff/ecookbook/test/some/path/in/the/repo?rev=2' } }
-                           }
+                             :child => { :tag => 'a', 
+                                         :attributes => {:href => '/repositories/entry/ecookbook/test/some/path/in/the/repo?rev=2'},
+                                         :content => 'repo',
+                                         # link to partial diff
+                                         :sibling =>  { :tag => 'a', 
+                                                        :attributes => { :href => '/repositories/diff/ecookbook/test/some/path/in/the/repo?rev=2' } 
+                                                       }
+                                        }
+                            }
     end
     
     def test_revision_with_repository_pointing_to_a_subdirectory
@@ -143,11 +149,18 @@ class RepositoriesSubversionControllerTest < Test::Unit::TestCase
       get :revision, :id => 1, :rev => 2
       assert_response :success
       assert_template 'revision'
-      assert_tag :tag => 'tr',
-                 :child => { :tag => 'td', :content => %r{/test/some/path/in/the/repo} },
-                 :child => { :tag => 'td', 
-                             :child => { :tag => 'a', :attributes => { :href => '/repositories/diff/ecookbook/path/in/the/repo?rev=2' } }
-                           }
+      assert_tag :tag => 'ul',
+                 :child => { :tag => 'li',
+                             # link to the entry at rev 2
+                             :child => { :tag => 'a', 
+                                         :attributes => {:href => '/repositories/entry/ecookbook/path/in/the/repo?rev=2'},
+                                         :content => 'repo',
+                                         # link to partial diff
+                                         :sibling =>  { :tag => 'a', 
+                                                        :attributes => { :href => '/repositories/diff/ecookbook/path/in/the/repo?rev=2' } 
+                                                       }
+                                        }
+                            }
     end
     
     def test_diff

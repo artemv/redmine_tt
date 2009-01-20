@@ -33,6 +33,12 @@ class IssueTest < Test::Unit::TestCase
     assert_equal 1.5, issue.estimated_hours
   end
   
+  def test_create_minimal
+    issue = Issue.new(:project_id => 1, :tracker_id => 1, :author_id => 3, :status_id => 1, :priority => Enumeration.get_values('IPRI').first, :subject => 'test_create')
+    assert issue.save
+    assert issue.description.nil?
+  end
+  
   def test_create_with_required_custom_field
     field = IssueCustomField.find_by_name('Database')
     field.update_attribute(:is_required, true)
@@ -198,5 +204,12 @@ class IssueTest < Test::Unit::TestCase
 
   def test_find_in_progress_failure
     assert_nil issues(:issues_001).time_entry_in_progress(users(:users_002))
+  end
+
+  def test_overdue
+    assert Issue.new(:due_date => 1.day.ago.to_date).overdue?
+    assert !Issue.new(:due_date => Date.today).overdue?
+    assert !Issue.new(:due_date => 1.day.from_now.to_date).overdue?
+    assert !Issue.new(:due_date => nil).overdue?
   end
 end

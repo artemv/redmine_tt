@@ -23,10 +23,14 @@ class MailHandlerTest < Test::Unit::TestCase
                    :roles,
                    :members,
                    :issues,
+                   :issue_statuses,
+                   :workflows,
                    :trackers,
                    :projects_trackers,
                    :enumerations,
-                   :issue_categories
+                   :issue_categories,
+                   :custom_fields,
+                   :custom_fields_trackers
   
   FIXTURES_PATH = File.dirname(__FILE__) + '/../fixtures/mail_handler'
   
@@ -100,6 +104,24 @@ class MailHandlerTest < Test::Unit::TestCase
     assert_equal 10790, issue.attachments.first.filesize
   end
   
+  def test_add_issue_with_custom_fields
+    issue = submit_email('ticket_with_custom_fields.eml', :issue => {:project => 'onlinestore'})
+    assert issue.is_a?(Issue)
+    assert !issue.new_record?
+    issue.reload
+    assert_equal 'New ticket with custom field values', issue.subject
+    assert_equal 'Value for a custom field', issue.custom_value_for(CustomField.find_by_name('Searchable field')).value
+  end
+  
+  def test_add_issue_with_cc
+    issue = submit_email('ticket_with_cc.eml', :issue => {:project => 'ecookbook'})
+    assert issue.is_a?(Issue)
+    assert !issue.new_record?
+    issue.reload
+    assert issue.watched_by?(User.find_by_mail('dlopper@somenet.foo'))
+    assert_equal 1, issue.watchers.size
+  end
+  
   def test_add_issue_note
     journal = submit_email('ticket_reply.eml')
     assert journal.is_a?(Journal)
@@ -117,6 +139,15 @@ class MailHandlerTest < Test::Unit::TestCase
     assert_equal Issue.find(2), journal.journalized
     assert_match /This is reply/, journal.notes
     assert_equal IssueStatus.find_by_name("Resolved"), issue.status
+  end
+  
+  def test_should_strip_tags_of_html_only_emails
+    issue = submit_email('ticket_html_only.eml', :issue => {:project => 'ecookbook'})
+    assert issue.is_a?(Issue)
+    assert !issue.new_record?
+    issue.reload
+    assert_equal 'HTML email', issue.subject
+    assert_equal 'This is a html-only email.', issue.description
   end
 
   private

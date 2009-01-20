@@ -139,7 +139,12 @@ class TimelogController < ApplicationController
   
   def details
     sort_init 'spent_on', 'desc'
-    sort_update
+    sort_update 'spent_on' => 'spent_on',
+                'user' => 'user_id',
+                'activity' => 'activity_id',
+                'project' => "#{Project.table_name}.name",
+                'issue' => 'issue_id',
+                'hours' => 'hours'
     
     cond = ARCondition.new
     if @project.nil?
@@ -206,7 +211,7 @@ class TimelogController < ApplicationController
     
     if request.post? and @time_entry.save
       flash[:notice] = build_timelog_update_message
-      redirect_to(params[:back_url].blank? ? {:action => 'details', :project_id => @time_entry.project} : params[:back_url])
+      redirect_back_or_default :action => 'details', :project_id => @time_entry.project
       return
     end    
   end

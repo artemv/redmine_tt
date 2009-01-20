@@ -7,7 +7,7 @@
 <meta name="keywords" content="issue,bug,tracker" />
 <%= stylesheet_link_tag 'application', :media => 'all' %>
 <%= javascript_include_tag :defaults %>
-<%= stylesheet_link_tag 'jstoolbar' %>
+<%= heads_for_wiki_formatter %>
 <!--[if IE]>
     <style type="text/css">
       * html body{ width: expression( document.documentElement.clientWidth < 900 ? '900px' : '100%' ); }
@@ -24,7 +24,7 @@
     <div id="account">
         <%= render_menu :account_menu -%>
     </div>
-    <%= content_tag('div', "#{l(:label_logged_as)} #{link_to User.current.login, show_my_account_path}", :id => 'loggedas') if User.current.logged? %>
+    <%= content_tag('div', "#{l(:label_logged_as)} #{link_to_user(User.current, :format => :username)}", :id => 'loggedas') if User.current.logged? %>
     <%= render_menu :top_menu -%>
 </div>
       
@@ -50,8 +50,7 @@
     </div>
     
     <div id="content">
-            <%= content_tag('div', flash[:error], :class => 'flash error') if flash[:error] %>
-            <%= content_tag('div', flash[:notice], :class => 'flash notice') if flash[:notice] %>
+				<%= render_flash_messages %>
         <%= yield %>
     </div>
 </div>
@@ -62,5 +61,6 @@
     Powered by <%= link_to Redmine::Info.app_name, Redmine::Info.url %> &copy; 2006-2008 Jean-Philippe Lang
 </div>
 </div>
+<%= call_hook :view_layouts_base_body_bottom %>
 </body>
 </html>

@@ -37,7 +37,7 @@ class TimeEntry < ActiveRecord::Base
                 :description => :comments
   
   validates_presence_of :user_id, :activity_id, :project_id, :spent_on
-  validates_numericality_of :hours, :allow_nil => true
+  validates_numericality_of :hours, :allow_nil => true, :message => :activerecord_error_invalid
   validates_length_of :comments, :maximum => 255, :allow_nil => true
 
   MAX_START_END_TIME_DISTANCE = 15.hours
@@ -94,7 +94,7 @@ class TimeEntry < ActiveRecord::Base
   end
   
   def hours=(h)
-    write_attribute :hours, (h.is_a?(String) ? h.to_hours : h)
+    write_attribute :hours, (h.is_a?(String) ? (h.to_hours || h) : h)
   end
   
   # tyear, tmonth, tweek assigned where setting spent_on attributes

@@ -1,4 +1,37 @@
 --- 
+issues_107:
+  created_on: 2006-07-19 21:07:27 +02:00
+  project_id: 1
+  updated_on: 2006-07-19 21:07:27 +02:00
+  priority_id: 4
+  subject: Some closed bug for version 1.0
+  id: 107
+  fixed_version_id: 2
+  category_id:
+  description: Some closed bug for version 1.0
+  tracker_id: 1
+  assigned_to_id: 3
+  author_id: 2
+  status_id: 6
+  start_date: <%= 1.day.from_now.to_date.to_s(:db) %>
+  due_date: <%= 40.day.ago.to_date.to_s(:db) %>
+  estimated_hours: 10
+issues_108:
+  created_on: <%= 1.minute.ago.to_date.to_s(:db) %>
+  project_id: 1
+  updated_on: <%= 1.minute.ago.to_date.to_s(:db) %>
+  priority_id: 4
+  subject: Issue of version 3
+  id: 108
+  fixed_version_id: 3
+  category_id:
+  description: Issue of version 3
+  tracker_id: 1
+  assigned_to_id:
+  author_id: 2
+  status_id: 6
+  start_date: <%= Date.today.to_s(:db) %>
+  due_date: <%= 1.days.from_now.to_date.to_s(:db) %>
 issues_001: 
   created_on: <%= 3.days.ago.to_date.to_s(:db) %>
   project_id: 1
@@ -93,36 +126,37 @@ issues_006:
   status_id: 1
   start_date: <%= Date.today.to_s(:db) %>
   due_date: <%= 1.days.from_now.to_date.to_s(:db) %>
-issues_007:
-  created_on: 2006-07-19 21:07:27 +02:00
+issues_007: 
+  created_on: <%= 10.days.ago.to_date.to_s(:db) %>
   project_id: 1
-  updated_on: 2006-07-19 21:07:27 +02:00
-  priority_id: 4
-  subject: Some closed bug for version 1.0
+  updated_on: <%= 10.days.ago.to_date.to_s(:db) %>
+  priority_id: 3
+  subject: Issue due today
   id: 7
-  fixed_version_id: 2
+  fixed_version_id: 
   category_id: 
-  description: Some closed bug for version 1.0
-  tracker_id: 1
-  assigned_to_id: 3
-  author_id: 2
-  status_id: 6
-  start_date: <%= 1.day.from_now.to_date.to_s(:db) %>
-  due_date: <%= 40.day.ago.to_date.to_s(:db) %>
-  estimated_hours: 10
-issues_008: 
-  created_on: <%= 1.minute.ago.to_date.to_s(:db) %>
-  project_id: 1
-  updated_on: <%= 1.minute.ago.to_date.to_s(:db) %>
-  priority_id: 4
-  subject: Issue of version 3
-  id: 8
-  fixed_version_id: 3
-  category_id: 
-  description: Issue of version 3
+  description: This is an issue that is due today
   tracker_id: 1
   assigned_to_id: 
   author_id: 2
-  status_id: 6
-  start_date: <%= Date.today.to_s(:db) %>
-  due_date: <%= 1.days.from_now.to_date.to_s(:db) %>
+  status_id: 1
+  start_date: <%= 10.days.ago.to_s(:db) %>
+  due_date: <%= Date.today.to_s(:db) %>
+  lock_version: 0
+issues_008: 
+  created_on: <%= 10.days.ago.to_date.to_s(:db) %>
+  project_id: 1
+  updated_on: <%= 10.days.ago.to_date.to_s(:db) %>
+  priority_id: 3
+  subject: Closed issue
+  id: 8
+  fixed_version_id: 
+  category_id: 
+  description: This is a closed issue.
+  tracker_id: 1
+  assigned_to_id: 
+  author_id: 2
+  status_id: 5
+  start_date: 
+  due_date: 
+  lock_version: 0

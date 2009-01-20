@@ -61,13 +61,16 @@ module Redmine
                                                       :comment_news,
                                                       :view_documents,
                                                       :view_wiki_pages,
+                                                      :view_wiki_edits,
                                                       :edit_wiki_pages,
                                                       :delete_wiki_pages,
                                                       :add_messages,
+                                                      :edit_own_messages,
                                                       :view_files,
                                                       :manage_files,
                                                       :browse_repository,
-                                                      :view_changesets]
+                                                      :view_changesets,
+                                                      :commit_access]
             
             reporter = Role.create! :name => l(:default_role_reporter),
                                     :position => 3,
@@ -81,7 +84,9 @@ module Redmine
                                                     :comment_news,
                                                     :view_documents,
                                                     :view_wiki_pages,
+                                                    :view_wiki_edits,
                                                     :add_messages,
+                                                    :edit_own_messages,
                                                     :view_files,
                                                     :browse_repository,
                                                     :view_changesets]
@@ -95,6 +100,7 @@ module Redmine
                                                             :comment_news,
                                                             :view_documents,
                                                             :view_wiki_pages,
+                                                            :view_wiki_edits,
                                                             :add_messages,
                                                             :view_files,
                                                             :browse_repository,
@@ -105,6 +111,7 @@ module Redmine
                                                            :view_time_entries,
                                                            :view_documents,
                                                            :view_wiki_pages,
+                                                           :view_wiki_edits,
                                                            :view_files,
                                                            :browse_repository,
                                                            :view_changesets]

@@ -27,14 +27,12 @@ class ProjectsController < ApplicationController
   before_filter :find_optional_project, :only => :activity
   before_filter :authorize, :except => [ :index, :list, :add, :archive, :unarchive, :destroy, :activity ]
   before_filter :require_admin, :only => [ :add, :archive, :unarchive, :destroy ]
-  accept_key_auth :activity, :calendar
+  accept_key_auth :activity
   
   helper :sort
   include SortHelper
   helper :custom_fields
   include CustomFieldsHelper   
-  helper :ifpdf
-  include IfpdfHelper
   helper :issues
   helper IssuesHelper
   helper :queries
@@ -84,6 +82,11 @@ class ProjectsController < ApplicationController
 	
   # Show @project
   def show
+    if params[:jump]
+      # try to redirect to the requested menu item
+      redirect_to_project_menu_item(@project, params[:jump]) && return
+    end
+    
     @members_by_role = @project.members.find(:all, :include => [:user, :role], :order => 'position').group_by {|m| m.role}
     @subprojects = @project.children.find(:all, :conditions => Project.visible_by(User.current))
     @news = @project.news.find(:all, :limit => 5, :include => [ :author, :project ], :order => "#{News.table_name}.created_on DESC")
@@ -188,18 +191,26 @@ class ProjectsController < ApplicationController
 
   def add_file
     if request.post?
-      @version = @project.versions.find_by_id(params[:version_id])
-      attachments = attach_files(@version, params[:attachments])
-      Mailer.deliver_attachments_added(attachments) if !attachments.empty? && Setting.notified_events.include?('file_added')
+      container = (params[:version_id].blank? ? @project : @project.versions.find_by_id(params[:version_id]))
+      attachments = attach_files(container, params[:attachments])
+      if !attachments.empty? && Setting.notified_events.include?('file_added')
+        Mailer.deliver_attachments_added(attachments)
+      end
       redirect_to :controller => 'projects', :action => 'list_files', :id => @project
+      return
     end
     @versions = @project.versions.sort
   end
   
   def list_files
-    sort_init "#{Attachment.table_name}.filename", "asc"
-    sort_update
-    @versions = @project.versions.find(:all, :include => :attachments, :order => sort_clause).sort.reverse
+    sort_init 'filename', 'asc'
+    sort_update 'filename' => "#{Attachment.table_name}.filename",
+                'created_on' => "#{Attachment.table_name}.created_on",
+                'size' => "#{Attachment.table_name}.filesize",
+                'downloads' => "#{Attachment.table_name}.downloads"
+                
+    @containers = [ Project.find(@project.id, :include => :attachments, :order => sort_clause)]
+    @containers += @project.versions.find(:all, :include => :attachments, :order => sort_clause).sort.reverse
     render :layout => !request.xhr?
   end
   
@@ -221,16 +232,19 @@ class ProjectsController < ApplicationController
     @days = Setting.activity_days_default.to_i
     
     if params[:from]
-      begin; @date_to = params[:from].to_date; rescue; end
+      begin; @date_to = params[:from].to_date + 1; rescue; end
     end
 
     @date_to ||= Date.today + 1
     @date_from = @date_to - @days
     @with_subprojects = params[:with_subprojects].nil? ? Setting.display_subprojects_issues? : (params[:with_subprojects] == '1')
+    @author = (params[:user_id].blank? ? nil : User.active.find(params[:user_id]))
     
-    @activity = Redmine::Activity::Fetcher.new(User.current, :project => @project, :with_subprojects => @with_subprojects)
+    @activity = Redmine::Activity::Fetcher.new(User.current, :project => @project, 
+                                                             :with_subprojects => @with_subprojects,
+                                                             :author => @author)
     @activity.scope_select {|t| !params["show_#{t}"].nil?}
-    @activity.default_scope! if @activity.scope.empty?
+    @activity.scope = (@author.nil? ? :default : :all) if @activity.scope.empty?
 
     events = @activity.events(@date_from, @date_to)
     
@@ -240,101 +254,18 @@ class ProjectsController < ApplicationController
         render :layout => false if request.xhr?
       }
       format.atom {
-        title = (@activity.scope.size == 1) ? l("label_#{@activity.scope.first.singularize}_plural") : l(:label_activity)
+        title = l(:label_activity)
+        if @author
+          title = @author.name
+        elsif @activity.scope.size == 1
+          title = l("label_#{@activity.scope.first.singularize}_plural")
+        end
         render_feed(events, :title => "#{@project || Setting.app_title}: #{title}")
       }
     end
-  end
-  
-  def calendar
-    @trackers = @project.rolled_up_trackers
-    retrieve_selected_tracker_ids(@trackers)
     
-    if params[:year] and params[:year].to_i > 1900
-      @year = params[:year].to_i
-      if params[:month] and params[:month].to_i > 0 and params[:month].to_i < 13
-        @month = params[:month].to_i
-      end    
-    end
-    @year ||= Date.today.year
-    @month ||= Date.today.month    
-    @calendar = Redmine::Helpers::Calendar.new(Date.civil(@year, @month, 1), current_language, :month)
-    @with_subprojects = params[:with_subprojects].nil? ? Setting.display_subprojects_issues? : (params[:with_subprojects] == '1')
-    events = []
-    @project.issues_with_subprojects(@with_subprojects) do
-      events += Issue.find(:all, 
-                           :include => [:tracker, :status, :assigned_to, :priority, :project], 
-                           :conditions => ["((start_date BETWEEN ? AND ?) OR (due_date BETWEEN ? AND ?)) AND #{Issue.table_name}.tracker_id IN (#{@selected_tracker_ids.join(',')})", @calendar.startdt, @calendar.enddt, @calendar.startdt, @calendar.enddt]
-                           ) unless @selected_tracker_ids.empty?
-      events += Version.find(:all, :include => :project,
-                                   :conditions => ["effective_date BETWEEN ? AND ?", @calendar.startdt, @calendar.enddt])
-    end
-    @calendar.events = events
-    
-    render :layout => false if request.xhr?
-  end  
-
-  def gantt
-    @trackers = @project.rolled_up_trackers
-    retrieve_selected_tracker_ids(@trackers)
-    
-    if params[:year] and params[:year].to_i >0
-      @year_from = params[:year].to_i
-      if params[:month] and params[:month].to_i >=1 and params[:month].to_i <= 12
-        @month_from = params[:month].to_i
-      else
-        @month_from = 1
-      end
-    else
-      @month_from ||= Date.today.month
-      @year_from ||= Date.today.year
-    end
-    
-    zoom = (params[:zoom] || User.current.pref[:gantt_zoom]).to_i
-    @zoom = (zoom > 0 && zoom < 5) ? zoom : 2    
-    months = (params[:months] || User.current.pref[:gantt_months]).to_i
-    @months = (months > 0 && months < 25) ? months : 6
-    
-    # Save gantt paramters as user preference (zoom and months count)
-    if (User.current.logged? && (@zoom != User.current.pref[:gantt_zoom] || @months != User.current.pref[:gantt_months]))
-      User.current.pref[:gantt_zoom], User.current.pref[:gantt_months] = @zoom, @months
-      User.current.preference.save
-    end
-    
-    @date_from = Date.civil(@year_from, @month_from, 1)
-    @date_to = (@date_from >> @months) - 1
-    @with_subprojects = params[:with_subprojects].nil? ? Setting.display_subprojects_issues? : (params[:with_subprojects] == '1')
-    
-    @events = []
-    @project.issues_with_subprojects(@with_subprojects) do
-      # Issues that have start and due dates
-      @events += Issue.find(:all, 
-                           :order => "start_date, due_date",
-                           :include => [:tracker, :status, :assigned_to, :priority, :project], 
-                           :conditions => ["(((start_date>=? and start_date<=?) or (due_date>=? and due_date<=?) or (start_date<? and due_date>?)) and start_date is not null and due_date is not null and #{Issue.table_name}.tracker_id in (#{@selected_tracker_ids.join(',')}))", @date_from, @date_to, @date_from, @date_to, @date_from, @date_to]
-                           ) unless @selected_tracker_ids.empty?
-      # Issues that don't have a due date but that are assigned to a version with a date
-      @events += Issue.find(:all, 
-                           :order => "start_date, effective_date",
-                           :include => [:tracker, :status, :assigned_to, :priority, :project, :fixed_version], 
-                           :conditions => ["(((start_date>=? and start_date<=?) or (effective_date>=? and effective_date<=?) or (start_date<? and effective_date>?)) and start_date is not null and due_date is null and effective_date is not null and #{Issue.table_name}.tracker_id in (#{@selected_tracker_ids.join(',')}))", @date_from, @date_to, @date_from, @date_to, @date_from, @date_to]
-                           ) unless @selected_tracker_ids.empty?
-      @events += Version.find(:all, :include => :project,
-                                    :conditions => ["effective_date BETWEEN ? AND ?", @date_from, @date_to])
-    end
-    @events.sort! {|x,y| x.start_date <=> y.start_date }
-    
-    if params[:format]=='pdf'
-      @options_for_rfpdf ||= {}
-      @options_for_rfpdf[:file_name] = "#{@project.identifier}-gantt.pdf"
-      render :template => "projects/gantt.rfpdf", :layout => false
-    elsif params[:format]=='png' && respond_to?('gantt_image')
-      image = gantt_image(@events, @date_from, @months, @zoom)
-      image.format = 'PNG'
-      send_data(image.to_blob, :disposition => 'inline', :type => 'image/png', :filename => "#{@project.identifier}-gantt.png")
-    else
-      render :template => "projects/gantt.rhtml"
-    end
+  rescue ActiveRecord::RecordNotFound
+    render_404
   end
   
 private

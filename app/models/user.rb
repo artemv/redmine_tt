@@ -37,9 +37,13 @@ class User < ActiveRecord::Base
   has_many :members, :dependent => :delete_all
   has_many :projects, :through => :memberships
   has_many :issue_categories, :foreign_key => 'assigned_to_id', :dependent => :nullify
+  has_many :changesets, :dependent => :nullify
   has_one :preference, :dependent => :destroy, :class_name => 'UserPreference'
   has_one :rss_token, :dependent => :destroy, :class_name => 'Token', :conditions => "action='feeds'"
   belongs_to :auth_source
+  
+  # Active non-anonymous users scope
+  named_scope :active, :conditions => "#{User.table_name}.status = #{STATUS_ACTIVE}"
   
   acts_as_customizable
   
@@ -50,7 +54,7 @@ class User < ActiveRecord::Base
 	
   validates_presence_of :login, :firstname, :lastname, :mail, :if => Proc.new { |user| !user.is_a?(AnonymousUser) }
   validates_uniqueness_of :login, :if => Proc.new { |user| !user.login.blank? }
-  validates_uniqueness_of :mail, :if => Proc.new { |user| !user.mail.blank? }
+  validates_uniqueness_of :mail, :if => Proc.new { |user| !user.mail.blank? }, :case_sensitive => false
   # Login must contain lettres, numbers, underscores only
   validates_format_of :login, :with => /^[a-z0-9_\-@\.]*$/i
   validates_length_of :login, :maximum => 30
@@ -70,17 +74,10 @@ class User < ActiveRecord::Base
     # update hashed_password if password was set
     self.hashed_password = User.hash_password(self.password) if self.password
   end
-
-  def self.active
-    with_scope :find => { :conditions => [ "status = ?", STATUS_ACTIVE ] } do 
-      yield 
-    end 
-  end
   
-  def self.find_active(*args)
-    active do
-      find(*args)
-    end
+  def reload(*args)
+    @name = nil
+    super
   end
   
   # Returns the user that matches provided login and password, or nil
@@ -119,8 +116,11 @@ class User < ActiveRecord::Base
 	
   # Return user's full name for display
   def name(formatter = nil)
-    f = USER_FORMATS[formatter || Setting.user_format] || USER_FORMATS[:firstname_lastname]
-    eval '"' + f + '"'
+    if formatter
+      eval('"' + (USER_FORMATS[formatter] || USER_FORMATS[:firstname_lastname]) + '"')
+    else
+      @name ||= eval('"' + (USER_FORMATS[Setting.user_format] || USER_FORMATS[:firstname_lastname]) + '"')
+    end
   end
   
   def active?
@@ -145,7 +145,7 @@ class User < ActiveRecord::Base
   end
   
   def time_zone
-    self.pref.time_zone.nil? ? nil : TimeZone[self.pref.time_zone]
+    @time_zone ||= (self.pref.time_zone.blank? ? nil : ActiveSupport::TimeZone[self.pref.time_zone])
   end
   
   def wants_comments_in_reverse_order?
@@ -179,14 +179,15 @@ class User < ActiveRecord::Base
     token = Token.find_by_action_and_value('autologin', key)
     token && (token.created_on > Setting.autologin.to_i.day.ago) && token.user.active? ? token.user : nil
   end
+  
+  # Makes find_by_mail case-insensitive
+  def self.find_by_mail(mail)
+    find(:first, :conditions => ["LOWER(mail) = ?", mail.to_s.downcase])
+  end
 
+  # Sort users by their display names
   def <=>(user)
-    if user.nil?
-      -1
-    else
-      namer = lambda {|u| [u.firstname.to_s.downcase, u.lastname.to_s.downcase]}
-      namer.call(self) <=> namer.call(user)
-    end
+    self.to_s.downcase <=> user.to_s.downcase
   end
    
   def to_s

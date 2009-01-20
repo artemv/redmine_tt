@@ -1,5 +1,5 @@
-# redMine - project management software
-# Copyright (C) 2006-2007  Jean-Philippe Lang
+# Redmine - project management software
+# Copyright (C) 2006-2008  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,13 +24,17 @@ class AccountController < ApplicationController
 
   # Show user's account
   def show
-    @user = User.find_active(params[:id])
+    @user = User.active.find(params[:id])
     @custom_values = @user.custom_values
     
     # show only public projects and private projects that the logged in user is also a member of
     @memberships = @user.memberships.select do |membership|
       membership.project.is_public? || (User.current.member_of?(membership.project))
     end
+    
+    events = Redmine::Activity::Fetcher.new(User.current, :author => @user).events(nil, nil, :limit => 10)
+    @events_by_day = events.group_by(&:event_date)
+    
   rescue ActiveRecord::RecordNotFound
     render_404
   end

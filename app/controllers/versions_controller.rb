@@ -33,14 +33,8 @@ class VersionsController < ApplicationController
     @version.destroy
     redirect_to :controller => 'projects', :action => 'settings', :tab => 'versions', :id => @project
   rescue
-    flash[:error] = "Unable to delete version"
+    flash[:error] = l(:notice_unable_delete_version)
     redirect_to :controller => 'projects', :action => 'settings', :tab => 'versions', :id => @project
-  end
-  
-  def destroy_file
-    @version.attachments.find(params[:attachment_id]).destroy
-    flash[:notice] = l(:notice_successful_delete)
-    redirect_to :controller => 'projects', :action => 'list_files', :id => @project
   end
   
   def status_by

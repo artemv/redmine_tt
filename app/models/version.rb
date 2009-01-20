@@ -19,12 +19,13 @@ class Version < ActiveRecord::Base
   before_destroy :check_integrity
   belongs_to :project
   has_many :fixed_issues, :class_name => 'Issue', :foreign_key => 'fixed_version_id'
-  has_many :attachments, :as => :container, :dependent => :destroy
+  acts_as_attachable :view_permission => :view_files,
+                     :delete_permission => :manage_files
 
   validates_presence_of :name
   validates_uniqueness_of :name, :scope => [:project_id]
   validates_length_of :name, :maximum => 100
-  validates_format_of :effective_date, :with => /^\d{4}-\d{2}-\d{2}$/, :message => :activerecord_error_not_a_date, :allow_nil => true
+  validates_format_of :effective_date, :with => /^\d{4}-\d{2}-\d{2}$/, :message => 'activerecord_error_not_a_date', :allow_nil => true
   
   def start_date
     effective_date

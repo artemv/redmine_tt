@@ -210,7 +210,7 @@ class WikiControllerTest < Test::Unit::TestCase
     assert page.protected?
     @request.session[:user_id] = 2
     post :protect, :id => 1, :page => page.title, :protected => '0'
-    assert_redirected_to 'wiki/ecookbook'
+    assert_redirected_to '/wiki/ecookbook/CookBook_documentation'
     assert !page.reload.protected?
   end
   
@@ -250,5 +250,10 @@ class WikiControllerTest < Test::Unit::TestCase
     get :edit, :id => 1, :page => 'CookBook_documentation'
     assert_response :success
     assert_template 'edit'    
+  end
+  
+  def test_history_of_non_existing_page_should_return_404
+    get :history, :id => 1, :page => 'Unknown_page'
+    assert_response 404
   end
 end

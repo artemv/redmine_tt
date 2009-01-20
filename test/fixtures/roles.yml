@@ -30,7 +30,9 @@ roles_001:
     - :view_documents
     - :manage_documents
     - :view_wiki_pages
+    - :view_wiki_edits
     - :edit_wiki_pages
+    - :delete_wiki_pages_attachments
     - :protect_wiki_pages
     - :delete_wiki_pages
     - :rename_wiki_pages
@@ -41,6 +43,7 @@ roles_001:
     - :view_files
     - :manage_files
     - :browse_repository
+    - :manage_repository
     - :view_changesets
 
   position: 1
@@ -72,10 +75,13 @@ roles_002:
     - :view_documents
     - :manage_documents
     - :view_wiki_pages
+    - :view_wiki_edits
     - :edit_wiki_pages
     - :protect_wiki_pages
     - :delete_wiki_pages
     - :add_messages
+    - :edit_own_messages
+    - :delete_own_messages
     - :manage_boards
     - :view_files
     - :manage_files
@@ -109,6 +115,7 @@ roles_003:
     - :view_documents
     - :manage_documents
     - :view_wiki_pages
+    - :view_wiki_edits
     - :edit_wiki_pages
     - :delete_wiki_pages
     - :add_messages
@@ -139,6 +146,7 @@ roles_004:
     - :view_documents
     - :manage_documents
     - :view_wiki_pages
+    - :view_wiki_edits
     - :edit_wiki_pages
     - :add_messages
     - :view_files
@@ -159,6 +167,7 @@ roles_005:
     - :view_time_entries
     - :view_documents
     - :view_wiki_pages
+    - :view_wiki_edits
     - :view_files
     - :browse_repository
     - :view_changesets

@@ -26,7 +26,6 @@ class Issue < ActiveRecord::Base
   belongs_to :category, :class_name => 'IssueCategory', :foreign_key => 'category_id'
 
   has_many :journals, :as => :journalized, :dependent => :destroy
-  has_many :attachments, :as => :container, :dependent => :destroy
   has_many :time_entries, :dependent => :delete_all
   
   has_and_belongs_to_many :changesets, :order => "#{Changeset.table_name}.committed_on ASC, #{Changeset.table_name}.id ASC"
@@ -34,6 +33,7 @@ class Issue < ActiveRecord::Base
   has_many :relations_from, :class_name => 'IssueRelation', :foreign_key => 'issue_from_id', :dependent => :delete_all
   has_many :relations_to, :class_name => 'IssueRelation', :foreign_key => 'issue_to_id', :dependent => :delete_all
   
+  acts_as_attachable :after_remove => :attachment_removed
   acts_as_customizable
   acts_as_watchable
   acts_as_searchable :columns => ['subject', "#{table_name}.description", "#{Journal.table_name}.notes"],
@@ -41,11 +41,13 @@ class Issue < ActiveRecord::Base
                      # sort by id so that limited eager loading doesn't break with postgresql
                      :order_column => "#{table_name}.id"
   acts_as_event :title => Proc.new {|o| "#{o.tracker.name} ##{o.id}: #{o.subject}"},
-                :url => Proc.new {|o| {:controller => 'issues', :action => 'show', :id => o.id}}                
+                :url => Proc.new {|o| {:controller => 'issues', :action => 'show', :id => o.id}},
+                :type => Proc.new {|o| 'issue' + (o.closed? ? ' closed' : '') }
   
-  acts_as_activity_provider :find_options => {:include => [:project, :author, :tracker]}
+  acts_as_activity_provider :find_options => {:include => [:project, :author, :tracker]},
+                            :author_key => :author_id
   
-  validates_presence_of :subject, :description, :priority, :project, :tracker, :author, :status
+  validates_presence_of :subject, :priority, :project, :tracker, :author, :status
   validates_length_of :subject, :maximum => 255
   validates_inclusion_of :done_ratio, :in => 0..100
   validates_numericality_of :estimated_hours, :allow_nil => true
@@ -200,6 +202,11 @@ class Issue < ActiveRecord::Base
     closed? || self.status.is_development_complete?
   end
   
+  # Returns true if the issue is overdue
+  def overdue?
+    !due_date.nil? && (due_date < Date.today)
+  end
+  
   # Users the issue can be assigned to
   def assignable_users
     project.assignable_users
@@ -268,11 +275,22 @@ class Issue < ActiveRecord::Base
   end
   
   def time_entry_in_progress(user = nil)
-    TimeEntry.find_by_issue_id(self.id,  
+    TimeEntry.find_by_issue_id(self.id,
         :conditions => 'start_time IS NOT NULL and hours IS NULL' + (user ? " and user_id = #{user.id}" : ''))
   end
 
   def active_versions
     project.active_versions(:for => self)
+  end
+  
+  private
+  
+  # Callback on attachment deletion
+  def attachment_removed(obj)
+    journal = init_journal(User.current)
+    journal.details << JournalDetail.new(:property => 'attachment',
+                                         :prop_key => obj.id,
+                                         :old_value => obj.filename)
+    journal.save
   end
 end

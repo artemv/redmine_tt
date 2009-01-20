@@ -1,5 +1,5 @@
-# redMine - project management software
-# Copyright (C) 2006-2007  Jean-Philippe Lang
+# Redmine - project management software
+# Copyright (C) 2006-2008  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -35,7 +35,7 @@ class QueryCustomFieldColumn < QueryColumn
 
   def initialize(custom_field)
     self.name = "cf_#{custom_field.id}".to_sym
-    self.sortable = false
+    self.sortable = custom_field.order_statement || false
     @cf = custom_field
   end
   
@@ -276,16 +276,7 @@ class Query < ActiveRecord::Base
     column_names.nil? || column_names.empty?
   end
 
-  def date_left_bound(value)
-    connection.quoted_date(value.to_time - Time.zone.utc_offset)
-  end
-
-  def date_right_bound(value)
-    connection.quoted_date(value.to_time + 1.day - 1.second - Time.zone.utc_offset)
-  end
-  
-  def statement
-    # project/subprojects clause
+  def project_statement
     project_clauses = []
     if project && !@project.active_children.empty?
       ids = [project.id]
@@ -303,12 +294,15 @@ class Query < ActiveRecord::Base
       elsif Setting.display_subprojects_issues?
         ids += project.child_ids
       end
-      project_clauses << "#{Issue.table_name}.project_id IN (%s)" % ids.join(',')
+      project_clauses << "#{Project.table_name}.id IN (%s)" % ids.join(',')
     elsif project
-      project_clauses << "#{Issue.table_name}.project_id = %d" % project.id
+      project_clauses << "#{Project.table_name}.id = %d" % project.id
     end
-    project_clauses <<  Project.visible_by(User.current)
-    
+    project_clauses <<  Project.allowed_to_condition(User.current, :view_issues)
+    project_clauses.join(' AND ')
+  end
+
+  def statement
     # filters clauses
     filters_clauses = []
     filters.each_key do |field|
@@ -336,71 +330,70 @@ class Query < ActiveRecord::Base
         v.push(User.current.logged? ? User.current.id.to_s : "0") if v.delete("me")
       end
       
-      case operator_for field
-      when "="
-        sql = sql + "#{db_table}.#{db_field} IN (" + v.collect{|val| "'#{connection.quote_string(val)}'"}.join(",") + ")"
-      when "!"
-        sql = sql + "(#{db_table}.#{db_field} IS NULL OR #{db_table}.#{db_field} NOT IN (" + v.collect{|val| "'#{connection.quote_string(val)}'"}.join(",") + "))"
-      when "!*"
-        sql = sql + "#{db_table}.#{db_field} IS NULL"
-        sql << " OR #{db_table}.#{db_field} = ''" if is_custom_filter
-      when "*"
-        sql = sql + "#{db_table}.#{db_field} IS NOT NULL"
-        sql << " AND #{db_table}.#{db_field} <> ''" if is_custom_filter
-      when ">="
-        sql = sql + "#{db_table}.#{db_field} >= #{v.first.to_i}"
-      when "<="
-        sql = sql + "#{db_table}.#{db_field} <= #{v.first.to_i}"
-      when "o"
-        sql = sql + "#{IssueStatus.table_name}.is_closed=#{connection.quoted_false}" if field == "status_id"
-      when "c"
-        sql = sql + "#{IssueStatus.table_name}.is_closed=#{connection.quoted_true}" if field == "status_id"
-      when "undone"
-        sql = sql + "#{IssueStatus.table_name}.is_closed=#{connection.quoted_false} AND #{IssueStatus.table_name}.is_development_complete=#{connection.quoted_false}" if field == "status_id"
-      when "done"
-        sql = sql + "#{IssueStatus.table_name}.is_closed = #{connection.quoted_true} OR #{IssueStatus.table_name}.is_development_complete=#{connection.quoted_true}" if field == "status_id"
-      when ">t-"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today - v.first.to_i), date_right_bound(Date.today)]
-      when "<t-"
-        sql = sql + "#{db_table}.#{db_field} <= '%s'" % date_right_bound(Date.today - v.first.to_i - 1)
-      when "t-"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today - v.first.to_i), date_right_bound(Date.today - v.first.to_i)]
-      when ">t+"
-        sql = sql + "#{db_table}.#{db_field} >= '%s'" % date_left_bound(Date.today + v.first.to_i)
-      when "<t+"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today), date_right_bound(Date.today + v.first.to_i)]
-      when "t+"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today + v.first.to_i), date_right_bound(Date.today + v.first.to_i)]
-      when "t"
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(Date.today), date_right_bound(Date.today)]
-      when "<t<"
-        if v[0].blank?
-          sql = sql + "#{db_table}.#{db_field} <= '%s'" % date_right_bound(v[1])
-        elsif v[1].blank?
-          sql = sql + "#{db_table}.#{db_field} >= '%s'" % date_left_bound(v[0])
-        else
-          sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [date_left_bound(v[0]), date_right_bound(v[1])]
-        end
-      when "w"
-        from = l(:general_first_day_of_week) == '7' ?
-          # week starts on sunday
-          ((Date.today.cwday == 7) ? Time.now.at_beginning_of_day : Time.now.at_beginning_of_week - 1.day) :
-          # week starts on monday (Rails default)
-          Time.now.at_beginning_of_week
-        sql = sql + "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(from), connection.quoted_date(from + 7.days)]
-      when "~"
-        sql = sql + "#{db_table}.#{db_field} LIKE '%#{connection.quote_string(v.first)}%'"
-      when "!~"
-        sql = sql + "#{db_table}.#{db_field} NOT LIKE '%#{connection.quote_string(v.first)}%'"
-      end
+      sql = sql + sql_for_field(field, v, db_table, db_field, is_custom_filter)
+      
       sql << ')'
       filters_clauses << sql
     end if filters and valid?
     
-    (project_clauses + filters_clauses).join(' AND ')
+    (filters_clauses << project_statement).join(' AND ')
   end
   
   private
+  
+  # Helper method to generate the WHERE sql for a +field+ with a +value+
+  def sql_for_field(field, value, db_table, db_field, is_custom_filter)
+    sql = ''
+    case operator_for field
+    when "="
+      sql = "#{db_table}.#{db_field} IN (" + value.collect{|val| "'#{connection.quote_string(val)}'"}.join(",") + ")"
+    when "!"
+      sql = "(#{db_table}.#{db_field} IS NULL OR #{db_table}.#{db_field} NOT IN (" + value.collect{|val| "'#{connection.quote_string(val)}'"}.join(",") + "))"
+    when "!*"
+      sql = "#{db_table}.#{db_field} IS NULL"
+      sql << " OR #{db_table}.#{db_field} = ''" if is_custom_filter
+    when "*"
+      sql = "#{db_table}.#{db_field} IS NOT NULL"
+      sql << " AND #{db_table}.#{db_field} <> ''" if is_custom_filter
+    when ">="
+      sql = "#{db_table}.#{db_field} >= #{value.first.to_i}"
+    when "<="
+      sql = "#{db_table}.#{db_field} <= #{value.first.to_i}"
+    when "o"
+      sql = "#{IssueStatus.table_name}.is_closed=#{connection.quoted_false}" if field == "status_id"
+    when "c"
+      sql = "#{IssueStatus.table_name}.is_closed=#{connection.quoted_true}" if field == "status_id"
+    when ">t-"
+      sql = date_range_clause_by_offsets(db_table, db_field, - value.first.to_i, 0)
+    when "<t-"
+      sql = date_range_clause(db_table, db_field, :to_offset => - value.first.to_i)
+    when "t-"
+      sql = date_range_clause_by_offsets(db_table, db_field, - value.first.to_i, - value.first.to_i)
+    when ">t+"
+      sql = date_range_clause(db_table, db_field, :from_offset => value.first.to_i)
+    when "<t+"
+      sql = date_range_clause_by_offsets(db_table, db_field, 0, value.first.to_i)
+    when "t+"
+      sql = date_range_clause_by_offsets(db_table, db_field, value.first.to_i, value.first.to_i)
+    when "t"
+      sql = date_range_clause_by_offsets(db_table, db_field, 0, 0)
+    when "<t<"
+      sql = date_range_clause(db_table, db_field, :from => value[0], :to => value[1])
+    when "w"
+      from = l(:general_first_day_of_week) == '7' ?
+      # week starts on sunday
+      ((Date.today.cwday == 7) ? Time.now.at_beginning_of_day : Time.now.at_beginning_of_week - 1.day) :
+        # week starts on monday (Rails default)
+        Time.now.at_beginning_of_week
+      sql = "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(from), connection.quoted_date(from + 7.days)]
+    when "~"
+      sql = "#{db_table}.#{db_field} LIKE '%#{connection.quote_string(value.first)}%'"
+    when "!~"
+      sql = "#{db_table}.#{db_field} NOT LIKE '%#{connection.quote_string(value.first)}%'"
+    end
+    
+    return sql
+  end
   
   def add_custom_fields_filters(custom_fields)
     @available_filters ||= {}
@@ -421,4 +414,36 @@ class Query < ActiveRecord::Base
       @available_filters["cf_#{field.id}"] = options.merge({ :name => field.name })
     end
   end
+  
+  def date_left_bound(value)
+    connection.quoted_date(value.to_time - Time.zone.utc_offset)
+  end
+
+  def date_right_bound(value)
+    connection.quoted_date(value.to_time + 1.day - 1.second - Time.zone.utc_offset)
+  end
+
+  # Returns a SQL clause for a date or datetime field.
+  def date_range_clause_by_offsets(table, field, from_offset, to_offset)
+    options = {}
+    options.merge! :from_offset => from_offset if from_offset
+    options.merge! :to_offset => to_offset if to_offset
+    date_range_clause(table, field, options)
+  end
+  
+  def date_range_clause(table, field, options)
+    s = []
+    from = Date.today + options[:from_offset] if options[:from_offset]
+    to = Date.today + options[:to_offset] if options[:to_offset]
+    from = options[:from] if options[:from]
+    to = options[:to] if options[:to]
+    if !from.blank?
+      s << ("#{table}.#{field} >= '%s'" % connection.quoted_date(from.to_time - Time.zone.utc_offset))
+    end
+    if !to.blank?
+      s << ("#{table}.#{field} <= '%s'" % connection.quoted_date(to.to_time.end_of_day - Time.zone.utc_offset))
+    end
+    s.join(' AND ')
+  end
+
 end

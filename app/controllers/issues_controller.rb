@@ -1,5 +1,5 @@
-# redMine - project management software
-# Copyright (C) 2006-2007  Jean-Philippe Lang
+# Redmine - project management software
+# Copyright (C) 2006-2008  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,14 +18,12 @@
 class IssuesController < ApplicationController
   menu_item :new_issue, :only => :new
   
-  before_filter :find_issue, :only => [:show, :edit, :reply, :destroy_attachment]
+  before_filter :find_issue, :only => [:show, :edit, :reply]
   before_filter :find_issues, :only => [:bulk_edit, :move, :destroy]
   before_filter :find_project, :only => [:new, :update_form, :preview]
 
-  before_filter :authorize, :except => [:index, :changes, :preview, 
-    :update_form, :context_menu, :diff]
-
-  before_filter :find_optional_project, :only => [:index, :changes]
+  before_filter :authorize, :except => [:index, :changes, :gantt, :calendar, :preview, :update_form, :context_menu, :diff]
+  before_filter :find_optional_project, :only => [:index, :changes, :gantt, :calendar]
   accept_key_auth :index, :changes
 
   helper :journals
@@ -33,8 +31,6 @@ class IssuesController < ApplicationController
   include ProjectsHelper   
   helper :custom_fields
   include CustomFieldsHelper
-  helper :ifpdf
-  include IfpdfHelper
   helper :issue_relations
   include IssueRelationsHelper
   helper :watchers
@@ -46,11 +42,13 @@ class IssuesController < ApplicationController
   include SortHelper
   include IssuesHelper
   helper :timelog
+  include Redmine::Export::PDF
 
   def index
-    sort_init "#{Issue.table_name}.id", "desc"
-    sort_update
     retrieve_query
+    sort_init 'id', 'desc'
+    sort_update({'id' => "#{Issue.table_name}.id"}.merge(@query.columns.inject({}) {|h, c| h[c.name.to_s] = c.sortable; h}))
+    
     if @query.valid?
       limit = per_page_option
       respond_to do |format|
@@ -70,7 +68,7 @@ class IssuesController < ApplicationController
         format.html { render :template => 'issues/index.rhtml', :layout => !request.xhr? }
         format.atom { render_feed(@issues, :title => "#{@project || Setting.app_title}: #{l(:label_issue_plural)}") }
         format.csv  { send_data(issues_to_csv(@issues, @project).read, :type => 'text/csv; header=present', :filename => 'export.csv') }
-        format.pdf  { send_data(render(:template => 'issues/index.rfpdf', :layout => false), :type => 'application/pdf', :filename => 'export.pdf') }
+        format.pdf  { send_data(issues_to_pdf(@issues, @project), :type => 'application/pdf', :filename => 'export.pdf') }
       end
     else
       # Send html if the query is not valid
@@ -81,9 +79,10 @@ class IssuesController < ApplicationController
   end
   
   def changes
-    sort_init "#{Issue.table_name}.id", "desc"
-    sort_update
     retrieve_query
+    sort_init 'id', 'desc'
+    sort_update({'id' => "#{Issue.table_name}.id"}.merge(@query.columns.inject({}) {|h, c| h[c.name.to_s] = c.sortable; h}))
+    
     if @query.valid?
       @journals = Journal.find :all, :include => [ :details, :user, {:issue => [:project, :author, :tracker, :status]} ],
                                      :conditions => @query.statement,
@@ -107,7 +106,7 @@ class IssuesController < ApplicationController
     respond_to do |format|
       format.html { render :template => 'issues/show.rhtml' }
       format.atom { render :action => 'changes', :layout => false, :content_type => 'application/atom+xml' }
-      format.pdf  { send_data(render(:template => 'issues/show.rfpdf', :layout => false), :type => 'application/pdf', :filename => "#{@project.identifier}-#{@issue.id}.pdf") }
+      format.pdf  { send_data(issue_to_pdf(@issue), :type => 'application/pdf', :filename => "#{@project.identifier}-#{@issue.id}.pdf") }
     end
   end
 
@@ -124,7 +123,10 @@ class IssuesController < ApplicationController
       render :nothing => true, :layout => true
       return
     end
-    @issue.attributes = params[:issue]
+    if params[:issue].is_a?(Hash)
+      @issue.attributes = params[:issue]
+      @issue.watcher_user_ids = params[:issue]['watcher_user_ids'] if User.current.allowed_to?(:add_issue_watchers, @project)
+    end
     @issue.author = User.current
     
     default_status = IssueStatus.default
@@ -144,7 +146,9 @@ class IssuesController < ApplicationController
         attach_files(@issue, params[:attachments])
         flash[:notice] = l(:notice_successful_create)
         Mailer.deliver_issue_add(@issue) if Setting.notified_events.include?('issue_added')
-        redirect_to :controller => 'issues', :action => 'show', :id => @issue
+        call_hook(:controller_issues_new_after_save, { :params => params, :issue => @issue})
+        redirect_to(params[:continue] ? { :action => 'new', :tracker_id => @issue.tracker } :
+                                        { :action => 'show', :id => @issue })
         return
       end		
     end	
@@ -181,6 +185,8 @@ class IssuesController < ApplicationController
       @time_entry.attributes = params[:time_entry]
       attachments = attach_files(@issue, params[:attachments])
       attachments.each {|a| journal.details << JournalDetail.new(:property => 'attachment', :prop_key => a.id, :value => a.filename)}
+      call_hook(:controller_issues_edit_before_save, { :params => params, :issue => @issue, :time_entry => @time_entry, :journal => journal})
+
       if (@time_entry.empty? || @time_entry.valid?) && @issue.save #execute block if everything is valid; empty time entry is OK
         # Log spend time
         if !@time_entry.empty? && current_role.allowed_to?(:log_time)
@@ -191,6 +197,7 @@ class IssuesController < ApplicationController
           flash[:notice] ||= l(:notice_successful_update)
           Mailer.deliver_issue_edit(journal) if Setting.notified_events.include?('issue_updated')
         end
+        call_hook(:controller_issues_edit_after_save, { :params => params, :issue => @issue, :time_entry => @time_entry, :journal => journal})
         redirect_to(params[:back_to] || {:action => 'show', :id => @issue})
       end
     end
@@ -258,7 +265,7 @@ class IssuesController < ApplicationController
     end
     # Find potential statuses the user could be allowed to switch issues to
     @available_statuses = Workflow.find(:all, :include => :new_status,
-                                              :conditions => {:role_id => current_role.id}).collect(&:new_status).compact.uniq
+                                              :conditions => {:role_id => current_role.id}).collect(&:new_status).compact.uniq.sort
   end
 
   def move
@@ -318,16 +325,63 @@ class IssuesController < ApplicationController
     @issues.each(&:destroy)
     redirect_to :action => 'index', :project_id => @project
   end
-
-  def destroy_attachment
-    a = @issue.attachments.find(params[:attachment_id])
-    a.destroy
-    journal = @issue.init_journal(User.current)
-    journal.details << JournalDetail.new(:property => 'attachment',
-                                         :prop_key => a.id,
-                                         :old_value => a.filename)
-    journal.save
-    redirect_to :action => 'show', :id => @issue
+  
+  def gantt
+    @gantt = Redmine::Helpers::Gantt.new(params)
+    retrieve_query
+    if @query.valid?
+      events = []
+      # Issues that have start and due dates
+      events += Issue.find(:all, 
+                           :order => "start_date, due_date",
+                           :include => [:tracker, :status, :assigned_to, :priority, :project], 
+                           :conditions => ["(#{@query.statement}) AND (((start_date>=? and start_date<=?) or (due_date>=? and due_date<=?) or (start_date<? and due_date>?)) and start_date is not null and due_date is not null)", @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to]
+                           )
+      # Issues that don't have a due date but that are assigned to a version with a date
+      events += Issue.find(:all, 
+                           :order => "start_date, effective_date",
+                           :include => [:tracker, :status, :assigned_to, :priority, :project, :fixed_version], 
+                           :conditions => ["(#{@query.statement}) AND (((start_date>=? and start_date<=?) or (effective_date>=? and effective_date<=?) or (start_date<? and effective_date>?)) and start_date is not null and due_date is null and effective_date is not null)", @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to]
+                           )
+      # Versions
+      events += Version.find(:all, :include => :project,
+                                   :conditions => ["(#{@query.project_statement}) AND effective_date BETWEEN ? AND ?", @gantt.date_from, @gantt.date_to])
+                                   
+      @gantt.events = events
+    end
+    
+    respond_to do |format|
+      format.html { render :template => "issues/gantt.rhtml", :layout => !request.xhr? }
+      format.png  { send_data(@gantt.to_image, :disposition => 'inline', :type => 'image/png', :filename => "#{@project.identifier}-gantt.png") } if @gantt.respond_to?('to_image')
+      format.pdf  { send_data(gantt_to_pdf(@gantt, @project), :type => 'application/pdf', :filename => "#{@project.nil? ? '' : "#{@project.identifier}-" }gantt.pdf") }
+    end
+  end
+  
+  def calendar
+    if params[:year] and params[:year].to_i > 1900
+      @year = params[:year].to_i
+      if params[:month] and params[:month].to_i > 0 and params[:month].to_i < 13
+        @month = params[:month].to_i
+      end    
+    end
+    @year ||= Date.today.year
+    @month ||= Date.today.month
+    
+    @calendar = Redmine::Helpers::Calendar.new(Date.civil(@year, @month, 1), current_language, :month)
+    retrieve_query
+    if @query.valid?
+      events = []
+      events += Issue.find(:all, 
+                           :include => [:tracker, :status, :assigned_to, :priority, :project], 
+                           :conditions => ["(#{@query.statement}) AND ((start_date BETWEEN ? AND ?) OR (due_date BETWEEN ? AND ?))", @calendar.startdt, @calendar.enddt, @calendar.startdt, @calendar.enddt]
+                           )
+      events += Version.find(:all, :include => :project,
+                                   :conditions => ["(#{@query.project_statement}) AND effective_date BETWEEN ? AND ?", @calendar.startdt, @calendar.enddt])
+                                     
+      @calendar.events = events
+    end
+    
+    render :layout => false if request.xhr?
   end
   
   def context_menu
@@ -414,9 +468,9 @@ private
   end
   
   def find_optional_project
-    return true unless params[:project_id]
-    @project = Project.find(params[:project_id])
-    authorize
+    @project = Project.find(params[:project_id]) unless params[:project_id].blank?
+    allowed = User.current.allowed_to?({:controller => params[:controller], :action => params[:action]}, @project, :global => true)
+    allowed ? true : deny_access
   rescue ActiveRecord::RecordNotFound
     render_404
   end

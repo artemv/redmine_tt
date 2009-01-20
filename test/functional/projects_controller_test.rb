@@ -1,5 +1,5 @@
-# redMine - project management software
-# Copyright (C) 2006-2007  Jean-Philippe Lang
+# Redmine - project management software
+# Copyright (C) 2006-2008  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,13 +23,15 @@ class ProjectsController; def rescue_action(e) raise e end; end
 
 class ProjectsControllerTest < Test::Unit::TestCase
   fixtures :projects, :versions, :users, :roles, :members, :issues, :journals, :journal_details,
-           :trackers, :projects_trackers, :issue_statuses, :enabled_modules, :enumerations, :boards, :messages
+           :trackers, :projects_trackers, :issue_statuses, :enabled_modules, :enumerations, :boards, :messages,
+           :attachments
 
   def setup
     @controller = ProjectsController.new
     @request    = ActionController::TestRequest.new
     @response   = ActionController::TestResponse.new
     @request.session[:user_id] = nil
+    Setting.default_language = 'en'
   end
 
   def test_index
@@ -112,11 +114,55 @@ class ProjectsControllerTest < Test::Unit::TestCase
     assert_nil Project.find_by_id(1)
   end
   
+  def test_add_file
+    set_tmp_attachments_directory
+    @request.session[:user_id] = 2
+    Setting.notified_events = ['file_added']
+    ActionMailer::Base.deliveries.clear
+    
+    assert_difference 'Attachment.count' do
+      post :add_file, :id => 1, :version_id => '',
+           :attachments => {'1' => {'file' => test_uploaded_file('testfile.txt', 'text/plain')}}
+    end
+    assert_redirected_to 'projects/list_files/ecookbook'
+    a = Attachment.find(:first, :order => 'created_on DESC')
+    assert_equal 'testfile.txt', a.filename
+    assert_equal Project.find(1), a.container
+
+    mail = ActionMailer::Base.deliveries.last
+    assert_kind_of TMail::Mail, mail
+    assert_equal "[eCookbook] New file", mail.subject
+    assert mail.body.include?('testfile.txt')
+  end
+  
+  def test_add_version_file
+    set_tmp_attachments_directory
+    @request.session[:user_id] = 2
+    Setting.notified_events = ['file_added']
+    
+    assert_difference 'Attachment.count' do
+      post :add_file, :id => 1, :version_id => '2',
+           :attachments => {'1' => {'file' => test_uploaded_file('testfile.txt', 'text/plain')}}
+    end
+    assert_redirected_to 'projects/list_files/ecookbook'
+    a = Attachment.find(:first, :order => 'created_on DESC')
+    assert_equal 'testfile.txt', a.filename
+    assert_equal Version.find(2), a.container
+  end
+  
   def test_list_files
     get :list_files, :id => 1
     assert_response :success
     assert_template 'list_files'
-    assert_not_nil assigns(:versions)
+    assert_not_nil assigns(:containers)
+    
+    # file attached to the project
+    assert_tag :a, :content => 'project_file.zip',
+                   :attributes => { :href => '/attachments/download/8/project_file.zip' }
+    
+    # file attached to a project's version
+    assert_tag :a, :content => 'version_file.zip',
+                   :attributes => { :href => '/attachments/download/9/version_file.zip' }
   end
 
   def test_changelog
@@ -202,75 +248,28 @@ class ProjectsControllerTest < Test::Unit::TestCase
                }
   end
   
+  def test_user_activity
+    get :activity, :user_id => 2
+    assert_response :success
+    assert_template 'activity'
+    assert_not_nil assigns(:events_by_day)
+    
+    assert_tag :tag => "h3", 
+               :content => /#{3.day.ago.to_date.day}/,
+               :sibling => { :tag => "dl",
+                 :child => { :tag => "dt",
+                   :attributes => { :class => /issue/ },
+                   :child => { :tag => "a",
+                     :content => /#{Issue.find(1).subject}/,
+                   }
+                 }
+               }
+  end
+  
   def test_activity_atom_feed
     get :activity, :format => 'atom'
     assert_response :success
     assert_template 'common/feed.atom.rxml'
-  end
-  
-  def test_calendar
-    get :calendar, :id => 1
-    assert_response :success
-    assert_template 'calendar'
-    assert_not_nil assigns(:calendar)
-  end
-
-  def test_calendar_with_subprojects_should_not_show_private_subprojects
-    get :calendar, :id => 1, :with_subprojects => 1, :tracker_ids => [1, 2]
-    assert_response :success
-    assert_template 'calendar'
-    assert_not_nil assigns(:calendar)
-    assert_no_tag :tag => 'a', :content => /#6/
-  end
-  
-  def test_calendar_with_subprojects_should_show_private_subprojects
-    @request.session[:user_id] = 2
-    get :calendar, :id => 1, :with_subprojects => 1, :tracker_ids => [1, 2]
-    assert_response :success
-    assert_template 'calendar'
-    assert_not_nil assigns(:calendar)
-    assert_tag :tag => 'a', :content => /#6/
-  end
-
-  def test_gantt
-    get :gantt, :id => 1
-    assert_response :success
-    assert_template 'gantt.rhtml'
-    events = assigns(:events)
-    assert_not_nil events
-    # Issue with start and due dates
-    i = Issue.find(1)
-    assert_not_nil i.due_date
-    assert events.include?(Issue.find(1))
-    # Issue with without due date but targeted to a version with date
-    i = Issue.find(2)
-    assert_nil i.due_date
-    assert events.include?(i)
-  end
-
-  def test_gantt_with_subprojects_should_not_show_private_subprojects
-    get :gantt, :id => 1, :with_subprojects => 1, :tracker_ids => [1, 2]
-    assert_response :success
-    assert_template 'gantt.rhtml'
-    assert_not_nil assigns(:events)
-    assert_no_tag :tag => 'a', :content => /#6/
-  end
-  
-  def test_gantt_with_subprojects_should_show_private_subprojects
-    @request.session[:user_id] = 2
-    get :gantt, :id => 1, :with_subprojects => 1, :tracker_ids => [1, 2]
-    assert_response :success
-    assert_template 'gantt.rhtml'
-    assert_not_nil assigns(:events)
-    assert_tag :tag => 'a', :content => /#6/
-  end
-
-  def test_gantt_export_to_pdf
-    get :gantt, :id => 1, :format => 'pdf'
-    assert_response :success
-    assert_template 'gantt.rfpdf'
-    assert_equal 'application/pdf', @response.content_type
-    assert_not_nil assigns(:events)
   end
   
   def test_archive    
@@ -288,6 +287,23 @@ class ProjectsControllerTest < Test::Unit::TestCase
     assert Project.find(1).active?
   end
   
+  def test_jump_should_redirect_to_active_tab
+    get :show, :id => 1, :jump => 'issues'
+    assert_redirected_to 'projects/ecookbook/issues'
+  end
+  
+  def test_jump_should_not_redirect_to_inactive_tab
+    get :show, :id => 3, :jump => 'documents'
+    assert_response :success
+    assert_template 'show'
+  end
+  
+  def test_jump_should_not_redirect_to_unknown_tab
+    get :show, :id => 3, :jump => 'foobar'
+    assert_response :success
+    assert_template 'show'
+  end
+  
   def test_project_menu
     assert_no_difference 'Redmine::MenuManager.items(:project_menu).size' do
       Redmine::MenuManager.map :project_menu do |menu|
@@ -298,14 +314,17 @@ class ProjectsControllerTest < Test::Unit::TestCase
       
       get :show, :id => 1
       assert_tag :div, :attributes => { :id => 'main-menu' },
-                       :descendant => { :tag => 'li', :child => { :tag => 'a', :content => 'Foo' } }
+                       :descendant => { :tag => 'li', :child => { :tag => 'a', :content => 'Foo',
+                                                                               :attributes => { :class => 'foo' } } }
   
       assert_tag :div, :attributes => { :id => 'main-menu' },
-                       :descendant => { :tag => 'li', :child => { :tag => 'a', :content => 'Bar' },
+                       :descendant => { :tag => 'li', :child => { :tag => 'a', :content => 'Bar',
+                                                                               :attributes => { :class => 'bar' } },
                                                       :before => { :tag => 'li', :child => { :tag => 'a', :content => 'ECOOKBOOK' } } }
 
       assert_tag :div, :attributes => { :id => 'main-menu' },
-                       :descendant => { :tag => 'li', :child => { :tag => 'a', :content => 'ECOOKBOOK' },
+                       :descendant => { :tag => 'li', :child => { :tag => 'a', :content => 'ECOOKBOOK',
+                                                                               :attributes => { :class => 'hello' } },
                                                       :before => { :tag => 'li', :child => { :tag => 'a', :content => 'Activity' } } }
       
       # Remove the menu items

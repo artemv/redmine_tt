@@ -66,6 +66,7 @@ module Redmine
     # Base class for hook listeners.
     class Listener
       include Singleton
+      include GLoc
 
       # Registers the listener
       def self.inherited(child)
@@ -107,3 +108,4 @@ module Redmine
 end
 
 ApplicationHelper.send(:include, Redmine::Hook::Helper)
+ActionController::Base.send(:include, Redmine::Hook::Helper)

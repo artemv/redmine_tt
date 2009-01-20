@@ -1,4 +1,4 @@
-# redMine - project management software
+# Redmine - project management software
 # Copyright (C) 2006-2008  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@ require File.dirname(__FILE__) + '/../test_helper'
 
 class VersionTest < Test::Unit::TestCase
   fixtures :all
+#  fixtures :projects, :issues, :issue_statuses, :versions
 
   def verify_counts(count_metrics, undone, done)
     assert_equal undone + done, count_metrics[:total]
@@ -38,7 +39,7 @@ class VersionTest < Test::Unit::TestCase
     grouped_metrics = version.get_grouped_metrics(:tracker)
     time_metrics = grouped_metrics[trackers(:trackers_001)][:time]
     
-    estimated = [:issues_001, :issues_003, :issues_007].inject(0) do |prev, current| 
+    estimated = [:issues_001, :issues_003, :issues_107].inject(0) do |prev, current|
       issues(current).estimated_hours + prev
     end
     
@@ -58,4 +59,14 @@ class VersionTest < Test::Unit::TestCase
     assert_equal spent + remaining, time_metrics[:total]
   end
   
+  def test_create
+    v = Version.new(:project => Project.find(1), :name => '1.1', :effective_date => '2011-03-25')
+    assert v.save
+  end
+  
+  def test_invalid_effective_date_validation
+    v = Version.new(:project => Project.find(1), :name => '1.1', :effective_date => '99999-01-01')
+    assert !v.save
+    assert_equal 'activerecord_error_not_a_date', v.errors.on(:effective_date)
+  end
 end

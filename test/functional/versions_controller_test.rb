@@ -83,7 +83,7 @@ class VersionsControllerTest < Test::Unit::TestCase
     post :edit, :id => 2, 
                 :version => { :name => 'New version name', 
                               :effective_date => Date.today.strftime("%Y-%m-%d")}
-    assert_redirected_to 'projects/settings/ecookbook'
+    assert_redirected_to '/projects/settings/ecookbook?tab=versions'
     version = Version.find(2)
     assert_equal 'New version name', version.name
     assert_equal Date.today, version.effective_date
@@ -94,7 +94,13 @@ class VersionsControllerTest < Test::Unit::TestCase
     version = versions(:versions_001)
     assert version.fixed_issues.empty?, "version should have no issues"
     post :destroy, :id => version.id
-    assert_redirected_to 'projects/settings/ecookbook'
+    assert_redirected_to 'projects/settings/ecookbook?tab=versions'
     assert_nil Version.find_by_id(version.id)
+  end
+  
+  def test_issue_status_by
+    xhr :get, :status_by, :id => 2
+    assert_response :success
+    assert_template '_issue_counts'
   end
 end

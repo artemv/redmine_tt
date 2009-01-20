@@ -48,6 +48,19 @@ class UserTest < Test::Unit::TestCase
     user.password, user.password_confirmation = "password", "password"
     assert user.save
   end
+  
+  def test_mail_uniqueness_should_not_be_case_sensitive
+    u = User.new(:firstname => "new", :lastname => "user", :mail => "newuser@somenet.foo")
+    u.login = 'newuser1'
+    u.password, u.password_confirmation = "password", "password"
+    assert u.save
+
+    u = User.new(:firstname => "new", :lastname => "user", :mail => "newUser@Somenet.foo")
+    u.login = 'newuser2'
+    u.password, u.password_confirmation = "password", "password"
+    assert !u.save
+    assert_equal 'activerecord_error_taken', u.errors.on(:mail)
+  end
 
   def test_update
     assert_equal "admin", @admin.login
@@ -85,9 +98,9 @@ class UserTest < Test::Unit::TestCase
   def test_name_format
     assert_equal 'Smith, John', @jsmith.name(:lastname_coma_firstname)
     Setting.user_format = :firstname_lastname
-    assert_equal 'John Smith', @jsmith.name
+    assert_equal 'John Smith', @jsmith.reload.name
     Setting.user_format = :username
-    assert_equal 'jsmith', @jsmith.name
+    assert_equal 'jsmith', @jsmith.reload.name
   end
   
   def test_lock
@@ -157,5 +170,11 @@ class UserTest < Test::Unit::TestCase
     assert !@jsmith.wants_comments_in_reverse_order?
     @jsmith.pref.comments_sorting = 'desc'
     assert @jsmith.wants_comments_in_reverse_order?
+  end
+  
+  def test_find_by_mail_should_be_case_insensitive
+    u = User.find_by_mail('JSmith@somenet.foo')
+    assert_not_nil u
+    assert_equal 'jsmith@somenet.foo', u.mail
   end
 end
