@@ -126,7 +126,7 @@ class WikiPage < ActiveRecord::Base
     self.parent = parent_page
   end
   
-  def self.notify?(action)
+  def self.notify?(action = nil)
     Setting.notified_events.include?(NotificationKeys::WIKI_EDIT)
   end
 

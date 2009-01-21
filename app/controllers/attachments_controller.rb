@@ -50,7 +50,7 @@ class AttachmentsController < ApplicationController
 
   def to_notify?
     if @attachment.container.class.respond_to?(:notify?)
-      @attachment.container.class.notify?(:update)
+      @attachment.container.class.notify?(:updated)
     else
       Setting.notified_events.include?(NotificationKeys::FILE_ADDED)
     end

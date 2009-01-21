@@ -1,0 +1,4 @@
+<%= l(:text_wiki_page_changed, link_to(l(:label_wiki_changed_word),
+    @change_url), @content.author) %><%= ' ' + l(:text_with_comment,
+    h(@content.comments)) if !@content.comments.blank?%>.<br/>
+<%= link_to @page.title, @page_url %>

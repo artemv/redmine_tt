@@ -203,7 +203,28 @@ class MailerTest < Test::Unit::TestCase
       assert Mailer.deliver_message_posted(message, recipients)
     end
   end
+
+  wiki_remove_tester = lambda do |page, context|
+    context.assert Mailer.deliver_wiki_remove(page, User.find(1))
+  end
   
+  [:add, :edit, [:remove, wiki_remove_tester]].each do |action, custom_tester|
+    define_method 'test_wiki_%s' % action do
+      page = WikiPage.find(1)
+      GLoc.valid_languages.each do |lang|
+        Setting.default_language = lang.to_s
+        [true, false].each do |plain|
+          Setting.plain_text_mail = plain
+          if custom_tester
+            custom_tester.call(page, self)
+          else
+            assert Mailer.send('deliver_wiki_%s' % action, page.content)
+          end
+        end
+      end
+    end
+  end
+
   def test_account_information
     user = User.find(:first)
     GLoc.valid_languages.each do |lang|

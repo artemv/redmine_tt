@@ -69,9 +69,39 @@ class Mailer < ActionMailer::Base
   def document_added(document)
     redmine_headers 'Project' => document.project.identifier
     recipients document.project.recipients
-    subject "[#{document.project.name}] #{l(:label_document_new)}: #{document.title}"
+    subject "[#{document.project.name}] #{l(:label_document_added)}: #{document.title}"
     body :document => document,
          :document_url => url_for(:controller => 'documents', :action => 'show', :id => document)
+  end
+
+  def wiki_add(content)
+    page = content.page
+    redmine_headers 'Project' => page.project.identifier
+    recipients page.project.recipients
+    subject "[#{page.project.name}] #{l(:label_wiki_added)}: #{page.title}"
+    body :page => page, :content => content,
+         :page_url => url_for({:controller => 'wiki'}.merge(WikiController.page_link(page)))
+  end
+
+  def wiki_remove(page, actor)
+    redmine_headers 'Project' => page.project.identifier
+    recipients page.project.recipients
+    subject "[#{page.project.name}] #{l(:label_wiki_deleted)}: #{page.title}"
+    body :page => page, :actor => actor, :pages_index_url =>
+      url_for(:controller => 'wiki', :action => 'special', :id => page.project,
+      :page => 'Page_index')
+  end
+
+  def wiki_edit(content)
+    page = content.page
+    redmine_headers 'Project' => page.project.identifier
+    recipients page.project.recipients
+    subject "[#{page.project.name}] #{l(:label_wiki_changed)}: #{page.title}"
+    body :page => page, :content => content,
+         :page_url => url_for({:controller => 'wiki'}.
+           merge(WikiController.page_link(page))),
+         :change_url => url_for(:controller => 'wiki', :action => 'diff', 
+         :page => page.title, :version => content.version, :id => page.project)
   end
 
   def attachments_added(attachments)

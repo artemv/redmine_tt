@@ -80,16 +80,26 @@ class WikiController < ApplicationController
       #@content.comments = params[:content][:comments]
       @content.attributes = params[:content]
       @content.author = User.current
+
       # if page is new @page.save will also save content, but not if page isn't a new record
-      if (@page.new_record? ? @page.save : @content.save)
-        redirect_to page_link
+      if @page.new_record?
+        result = @page.save
+        if result && WikiPage.notify?
+          Mailer.deliver_wiki_add(@content)
+        end
+      else
+        result = @content.save
+        if result && WikiPage.notify?
+          Mailer.deliver_wiki_edit(@content)
+        end
       end
+      redirect_to page_link if result
     end
   rescue ActiveRecord::StaleObjectError
     # Optimistic locking exception
     flash[:error] = l(:notice_locking_conflict)
   end
-  
+
   # rename a page
   def rename
     return render_403 unless editable?
@@ -135,6 +145,7 @@ class WikiController < ApplicationController
   def destroy
     return render_403 unless editable?
     @page.destroy
+    Mailer.deliver_wiki_remove(@page, User.current) if WikiPage.notify?
     redirect_to :action => 'special', :id => @project, :page => 'Page_index'
   end
 
@@ -178,8 +189,7 @@ class WikiController < ApplicationController
   def add_attachment
     return render_403 unless editable?
     attachments = attach_files(@page, params[:attachments])
-    if !attachments.empty? &&
-        Setting.notified_events.include?(NotificationKeys::WIKI_EDIT)
+    if !attachments.empty? && WikiPage.notify?
       
       Mailer.deliver_attachments_added(attachments)
     end

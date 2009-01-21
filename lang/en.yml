@@ -311,6 +311,11 @@ label_document: Document
 label_document_new: New document
 label_document_plural: Documents
 label_document_added: Document added
+label_wiki_added: Wiki page added
+label_wiki_changed: Wiki page changed
+label_wiki_changed_word: changed
+label_wiki_deleted: Wiki page was deleted
+label_wiki_deleted_by: Wiki page '%s' was deleted by %s
 label_role: Role
 label_role_plural: Roles
 label_role_new: New role
@@ -680,6 +685,9 @@ text_issues_ref_in_commit_messages: Referencing and fixing issues in commit mess
 text_issue_added: Issue %s has been reported by %s.
 text_issue_updated: Issue %s has been updated by %s.
 text_wiki_destroy_confirmation: Are you sure you want to delete this wiki and all its content ?
+text_wiki_page_added: Wiki page has been added by %s
+text_wiki_page_changed: Wiki page has been %s by %s
+text_with_comment: with comment '%s'
 text_issue_category_destroy_question: Some issues (%d) are assigned to this category. What do you want to do ?
 text_issue_category_destroy_assignments: Remove category assignments
 text_issue_category_reassign_to: Reassign issues to this category
