@@ -30,9 +30,9 @@ class Mailer < ActionMailer::Base
     message_id issue
     recipients issue.recipients
     cc(issue.watcher_recipients - @recipients)
-    subject "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] (#{issue.status.name}) #{issue.subject}"
+    subject issue_subject(issue)
     body :issue => issue,
-         :issue_url => url_for(:controller => 'issues', :action => 'show', :id => issue)
+         :issue_url => issue_url(issue)
   end
 
   def issue_edit(journal)
@@ -53,7 +53,7 @@ class Mailer < ActionMailer::Base
     subject s
     body :issue => issue,
          :journal => journal,
-         :issue_url => url_for(:controller => 'issues', :action => 'show', :id => issue),
+         :issue_url => issue_url(issue),
          :url_options => default_url_options
   end
 
@@ -295,13 +295,34 @@ class Mailer < ActionMailer::Base
       added_to = "#{l(:label_wiki)}: #{container.title}"
       added_to_url = url_for({:controller => 'wiki'}.
           merge(WikiController.page_link(container)))
+    when 'Issue'
+      added_to_url = issue_url(container)
+      added_to = "%s #%s: %s" % [container.tracker.name, container.id,
+          container.subject]
     end
     redmine_headers 'Project' => container.project.identifier
-    recipients container.project.recipients
+
+    #Issue case, currently
+    r = container.recipients if container.respond_to?(:recepients)
+    
+    r ||= container.project.recipients
+
+    self.recipients(r)
+    if container.respond_to?(:watcher_recipients)
+      self.cc(container.watcher_recipients - r)
+    end
     yield(container)
     body :attachments => attachments,
          :added_to => added_to,
          :added_to_url => added_to_url
+  end
+
+  def issue_url(issue)
+    url_for(:controller => 'issues', :action => 'show', :id => issue)
+  end
+
+  def issue_subject(issue)
+    "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] (#{issue.status.name}) #{issue.subject}"
   end
 
 end
