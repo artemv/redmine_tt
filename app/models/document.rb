@@ -35,7 +35,7 @@ class Document < ActiveRecord::Base
     end
   end
 
-  def notification_key
-    NotificationKeys::DOCUMENT_ADDED
+  def self.notify?(action)
+    Setting.notified_events.include?(NotificationKeys::DOCUMENT_ADDED)
   end
 end

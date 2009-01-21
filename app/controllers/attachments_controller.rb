@@ -49,9 +49,11 @@ class AttachmentsController < ApplicationController
   end
 
   def to_notify?
-    notification_key = @attachment.container.notification_key if @attachment.container.respond_to?(:notification_key)
-    notification_key ||= NotificationKeys::FILE_ADDED
-    Setting.notified_events.include?(notification_key)
+    if @attachment.container.class.respond_to?(:notify?)
+      @attachment.container.class.notify?(:update)
+    else
+      Setting.notified_events.include?(NotificationKeys::FILE_ADDED)
+    end
   end
 
   def destroy

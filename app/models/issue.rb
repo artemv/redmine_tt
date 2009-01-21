@@ -283,6 +283,10 @@ class Issue < ActiveRecord::Base
     project.active_versions(:for => self)
   end
   
+  def self.notify?(action)
+    Setting.notified_events.include?(NotificationKeys.const_get('ISSUE_%sD' % action.to_s.upcase))
+  end
+
   private
   
   # Callback on attachment deletion
