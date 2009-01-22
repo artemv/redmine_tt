@@ -18,8 +18,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class VersionTest < Test::Unit::TestCase
-  fixtures :all
-#  fixtures :projects, :issues, :issue_statuses, :versions
+  fixtures :projects, :issues, :issue_statuses, :versions, :time_entries, :trackers
 
   def verify_counts(count_metrics, undone, done)
     assert_equal undone + done, count_metrics[:total]
