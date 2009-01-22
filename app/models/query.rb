@@ -364,6 +364,10 @@ class Query < ActiveRecord::Base
       sql = "#{IssueStatus.table_name}.is_closed=#{connection.quoted_false}" if field == "status_id"
     when "c"
       sql = "#{IssueStatus.table_name}.is_closed=#{connection.quoted_true}" if field == "status_id"
+    when "undone"
+      sql = sql + "#{IssueStatus.table_name}.is_closed=#{connection.quoted_false} AND #{IssueStatus.table_name}.is_development_complete=#{connection.quoted_false}" if field == "status_id"
+    when "done"
+      sql = sql + "#{IssueStatus.table_name}.is_closed = #{connection.quoted_true} OR #{IssueStatus.table_name}.is_development_complete=#{connection.quoted_true}" if field == "status_id"
     when ">t-"
       sql = date_range_clause_by_offsets(db_table, column, - value.first.to_i, 0)
     when "<t-"

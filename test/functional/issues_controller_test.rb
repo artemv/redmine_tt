@@ -165,6 +165,23 @@ class IssuesControllerTest < Test::Unit::TestCase
       :to => nil)
   end
 
+  def test_no_value_query_operator(field, op)
+    get :index, :project_id => 1,
+      :set_filter => 1,
+      :fields => [field],
+      :operators => {field => op},
+      :values => {field => [""]}
+    assert_response :success
+  end
+
+  def test_done_query
+    test_no_value_query_operator("status_id", "done")
+  end
+
+  def test_undone_query
+    test_no_value_query_operator("status_id", "undone")
+  end
+
   def test_index_csv_with_project
     get :index, :format => 'csv'
     assert_response :success
