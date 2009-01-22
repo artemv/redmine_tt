@@ -315,13 +315,13 @@ class Query < ActiveRecord::Base
       if field =~ /^cf_(\d+)$/
         # custom field
         db_table = CustomValue.table_name
-        db_field = 'value'
+        column = CustomValue.columns_hash['value']
         is_custom_filter = true
         sql << "#{Issue.table_name}.id IN (SELECT #{Issue.table_name}.id FROM #{Issue.table_name} LEFT OUTER JOIN #{db_table} ON #{db_table}.customized_type='Issue' AND #{db_table}.customized_id=#{Issue.table_name}.id AND #{db_table}.custom_field_id=#{$1} WHERE "
       else
         # regular field
         db_table = Issue.table_name
-        db_field = field
+        column = Issue.columns_hash[field]
         sql << '('
       end
       
@@ -330,7 +330,7 @@ class Query < ActiveRecord::Base
         v.push(User.current.logged? ? User.current.id.to_s : "0") if v.delete("me")
       end
       
-      sql = sql + sql_for_field(field, v, db_table, db_field, is_custom_filter)
+      sql = sql + sql_for_field(field, v, db_table, column, is_custom_filter)
       
       sql << ')'
       filters_clauses << sql
@@ -342,7 +342,8 @@ class Query < ActiveRecord::Base
   private
   
   # Helper method to generate the WHERE sql for a +field+ with a +value+
-  def sql_for_field(field, value, db_table, db_field, is_custom_filter)
+  def sql_for_field(field, value, db_table, column, is_custom_filter)
+    db_field = column.name
     sql = ''
     case operator_for field
     when "="
@@ -364,28 +365,28 @@ class Query < ActiveRecord::Base
     when "c"
       sql = "#{IssueStatus.table_name}.is_closed=#{connection.quoted_true}" if field == "status_id"
     when ">t-"
-      sql = date_range_clause_by_offsets(db_table, db_field, - value.first.to_i, 0)
+      sql = date_range_clause_by_offsets(db_table, column, - value.first.to_i, 0)
     when "<t-"
-      sql = date_range_clause(db_table, db_field, :to_offset => - value.first.to_i)
+      sql = date_range_clause(db_table, column, :to_offset => - value.first.to_i)
     when "t-"
-      sql = date_range_clause_by_offsets(db_table, db_field, - value.first.to_i, - value.first.to_i)
+      sql = date_range_clause_by_offsets(db_table, column, - value.first.to_i, - value.first.to_i)
     when ">t+"
-      sql = date_range_clause(db_table, db_field, :from_offset => value.first.to_i)
+      sql = date_range_clause(db_table, column, :from_offset => value.first.to_i)
     when "<t+"
-      sql = date_range_clause_by_offsets(db_table, db_field, 0, value.first.to_i)
+      sql = date_range_clause_by_offsets(db_table, column, 0, value.first.to_i)
     when "t+"
-      sql = date_range_clause_by_offsets(db_table, db_field, value.first.to_i, value.first.to_i)
+      sql = date_range_clause_by_offsets(db_table, column, value.first.to_i, value.first.to_i)
     when "t"
-      sql = date_range_clause_by_offsets(db_table, db_field, 0, 0)
+      sql = date_range_clause_by_offsets(db_table, column, 0, 0)
     when "<t<"
-      sql = date_range_clause(db_table, db_field, :from => value[0], :to => value[1])
+      sql = date_range_clause(db_table, column, :from => value[0], :to => value[1])
     when "w"
       from = l(:general_first_day_of_week) == '7' ?
       # week starts on sunday
       ((Date.today.cwday == 7) ? Time.now.at_beginning_of_day : Time.now.at_beginning_of_week - 1.day) :
         # week starts on monday (Rails default)
         Time.now.at_beginning_of_week
-      sql = "#{db_table}.#{db_field} BETWEEN '%s' AND '%s'" % [connection.quoted_date(from), connection.quoted_date(from + 7.days)]
+      sql = date_range_clause(db_table, column, :from => from, :to => from + 7.days)
     when "~"
       sql = "#{db_table}.#{db_field} LIKE '%#{connection.quote_string(value.first)}%'"
     when "!~"
@@ -424,26 +425,35 @@ class Query < ActiveRecord::Base
   end
 
   # Returns a SQL clause for a date or datetime field.
-  def date_range_clause_by_offsets(table, field, from_offset, to_offset)
+  def date_range_clause_by_offsets(table, column, from_offset, to_offset)
     options = {}
     options.merge! :from_offset => from_offset if from_offset
     options.merge! :to_offset => to_offset if to_offset
-    date_range_clause(table, field, options)
+    date_range_clause(table, column, options)
   end
   
-  def date_range_clause(table, field, options)
+  def date_range_clause(table, column, options)
+    field = column.name
     s = []
     from = Date.today + options[:from_offset] if options[:from_offset]
     to = Date.today + options[:to_offset] if options[:to_offset]
     from = options[:from] if options[:from]
     to = options[:to] if options[:to]
     if !from.blank?
-      s << ("#{table}.#{field} >= '%s'" % connection.quoted_date(from.to_time - Time.zone.utc_offset))
+      s << ("#{table}.#{field} >= '%s'" % connection.quoted_date(maybe_with_zone(from.to_time, column)))
     end
     if !to.blank?
-      s << ("#{table}.#{field} <= '%s'" % connection.quoted_date(to.to_time.end_of_day - Time.zone.utc_offset))
+      s << ("#{table}.#{field} <= '%s'" % connection.quoted_date(maybe_with_zone(to.to_time.end_of_day, column)))
     end
     s.join(' AND ')
+  end
+
+  def maybe_with_zone(value, column)
+    if column.type == :date
+      value
+    else
+      value - Time.zone.utc_offset
+    end
   end
 
 end
