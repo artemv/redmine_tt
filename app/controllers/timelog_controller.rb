@@ -144,7 +144,9 @@ class TimelogController < ApplicationController
                 'activity' => 'activity_id',
                 'project' => "#{Project.table_name}.name",
                 'issue' => 'issue_id',
-                'hours' => 'hours'
+                'hours' => 'hours',
+                'start_time' => 'start_time',
+                'end_time' => 'end_time'
     
     cond = ARCondition.new
     if @project.nil?
